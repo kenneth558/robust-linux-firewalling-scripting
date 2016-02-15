@@ -1,0 +1,8 @@
+#The following line could break your current crontab entries, see readme
+SHELL=/bin/bash
+*/30 * * * * /etc/init.d/netfilter-persistent save >/dev/null 2>&1
+@reboot nice -n19 inotifywait --quiet --monitor --event modify /var/lib/dhcp/dhclient.eth0.leases|while read;do /home/homeowner/newip_no_mysql.sh;done >/dev/null 2>&1
+@reboot /home/homeowner/newip_no_mysql.sh >/dev/null 2>&1
+@reboot nice -n15 /usr/bin/tail -F -n 0 /var/log/kern.log|/bin/grep --line-buffered ' SRC='|stdbuf -o0 /bin/grep -v 'SRC=10\.'|stdbuf -o0 grep -v 'SRC=0\.0\.0\.0'|stdbuf -o0 grep -v 'SRC=127.0\.0\.1'|stdbuf -o0 /bin/grep -v 'SRC=192\.168\.'|stdbuf -o0 awk '{for (i=4;i<=NF;i++) {if ($i ~ "^SRC=") {{gsub("SRC=","",$i); printf $i" \""} printf "kern.log "$1" "$2" "$3; for (i=i;i<=NF;i++) {if ($i ~ "^PROTO=" || $i ~ "^SPT=" || $i ~ "^DPT") {printf " "$i}} print "\""}}}'|xargs -l1 /home/homeowner/blacklistme.sh >/dev/null 2>&1
+# */3 * * * * if [ $(/bin/ps aux|/bin/grep "/usr/sbin/knockd \-d \-i eth0"|/bin/grep -vc grep) -lt 1 ] || [ $(/usr/bin/tail -n-1 /var/log/knockd.log|/bin/grep -c shutting) -gt 0 ] && [ $(/bin/ps aux|/bin/grep sshd:|/bin/grep -vc root) -eq 0 ]; then /etc/init.d/knockd stop;/bin/sleep 1;/etc/init.d/knockd start;fi >/dev/null 2>&1
+# 10 * * * * nice -n19 /home/homeowner/email_fetch_parse >/dev/null 2>&1
