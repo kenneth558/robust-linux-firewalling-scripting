@@ -8,7 +8,7 @@ All this PLUS the simplicity and robustness inherent in a bare iptables and scri
 
 INTENDED AUDIENCE
 
- -- LINUX server Command Line Interface (CLI) users connected with IPv4 outbound (IPv6 maybe later).  IPv6 access INTO your system will always work fine because the IPv6 address will get converted into IPv4 before arrival. This setup can co-exist with your favorite Linux GUI and will also run on Linux workstation
+ -- LINUX server Command Line Interface (CLI) users connected with IPv4 (IPv6 maybe later).  IPv6 access INTO your system will always work fine because the IPv6 address will get converted into IPv4 before arrival. This setup can co-exist with your favorite Linux GUI and will also run on Linux workstation
 
  -- Plus anyone who doesn't even care about the firewalling aspect, but just wants the ability to email commands to their Linux-based automation or other purpose server
 
