@@ -96,16 +96,8 @@ Netfilter-persistent: used to best keep iptables rules between reboots of the sy
 
 Shell script files, adjust details for your situation.  All go in home directory
 
-.mailrc
+.mailrc -- too large for inclusion in readme
 Only needed for sending emails from the scripts.  If you have your system doing that to your satisfaction already, you might be better off not even installing this because your system might be using the procmail/sendmail combo instead of the postfix/mail combo I'm using.  Test for whether you need this configuration file with the command line test: echo “content”|mail -s “subject line” “youremail@gmail.com”.  If your account receives the email straightaway (not getting it discriminated against by spam filters) then you don't need nor want this file – it reveals your password.
-
-set smtp-use-starttls
-set ssl-verify=ignore
-set smtp=smtp://smtp.gmail.com:587
-set smtp-auth=login
-set smtp-auth-user=youremailaccount@gmail.com
-set smtp-auth-password=youremailpassword
-set from="youremailaccount@gmail.com(Your Name here needs parenthesis)" 
 
 What this file does
 More and more often, email MDAs discriminate against receiving unauthenticated emails.  This file is part of making outbound emails from your system get authenticated so they are more reliably sent to addresses controlled by discriminating MDAs.  The email account it refers to is the one your system will use in order to authenticate into for the sole purpose of sending authenticated emails out, and yet it can be the same one you want your emails to be sent to.  Basically, any normal email account works.  I actually have this being the same account that my system sends the notices to me to.
@@ -117,6 +109,89 @@ remakebuildiptablesfromiptables script -- too large for inclusion in readme
 email_fetch_parse script -- too large for inclusion in readme
 openall.sh script -- too large for inclusion in readme
 blacklistme.sh script -- too large for inclusion in readme
+
+FINALLY:
+"seed" your iptables ruleset manually--I suggest just running some of these commands from CLI: The first ones wipe clean all iptables, many later ones are only applicable if your system is on my same ISP (Walnut Communications).  The order they are in is how remakebuildiptablesfromiptables puts them when you run that script -- backwards because you use the insert (I) instead of append (A) option.
+
+/sbin/iptables -wF
+/sbin/iptables -wX
+/sbin/iptables -wt nat -F
+/sbin/iptables -wt nat -X
+/sbin/iptables -wt mangle -F
+/sbin/iptables -wt mangle -X
+/sbin/iptables -wt nat -P INPUT ACCEPT
+/sbin/iptables -wt nat -P OUTPUT ACCEPT
+/sbin/iptables -wP INPUT ACCEPT
+/sbin/iptables -wP FORWARD ACCEPT
+/sbin/iptables -wP OUTPUT ACCEPT
+/sbin/iptables -wI INPUT 1  -p all -j DROP
+/sbin/iptables -wI INPUT 1  -p all -j LOG --log-level 4
+/sbin/iptables -wI INPUT 1  -p all -j s_blacklist
+/sbin/iptables -wI INPUT 1  -i eth0  -p all -j s_privateIPs
+/sbin/iptables -wI INPUT 1  -p all -j s_whitelist
+/sbin/iptables -wI INPUT 1  -i eth0  -p tcp --dport 1958 -m comment --comment "This rule ensures email-reader port knock won't get ignored" -j LOG --log-level 4
+/sbin/iptables -wI INPUT 1  -p all -j s_static_trusted
+/sbin/iptables -wI INPUT 1  -p all -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+/sbin/iptables -wI OUTPUT 1  -p all -j d_blacklist
+/sbin/iptables -wI d_privateIPs 1  -d 10.0.0.0/8  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI d_privateIPs 1  -d 172.16.0.0/12  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI d_privateIPs 1  -o eth0  -d 192.168.0.0/16  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI d_static_trusted 1  -d 199.102.46.70  -p all -m comment --comment "local time server hosted by Monticello" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 208.67.222.222  -p all -m comment --comment "OpenDNS" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.89.199  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.91.13  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.94.4  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.91.15  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.91.24  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.91.23  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.88.149  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.91.14  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 91.189.92.201  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -p all -m comment --comment "established connections are assumed to be OK" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 206.72.26.254  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 207.32.31.195  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 167.142.225.5  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_static_trusted 1  -d 207.32.31.196  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 216.58.192.0/19  -p all -m comment --comment "google direct allocation" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 216.58.192.0/19  -p all -m comment --comment "google direct allocation" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 209.85.147.26  -p all -m comment --comment "gmail server" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 209.85.147.26  -p all -m comment --comment "gmail server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 74.125.0.0/16  -p all -m comment --comment "Google's range" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 74.125.0.0/16  -p all -m comment --comment "Google's range" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 173.194.0.0/16  -p all -m comment --comment "Google's range" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 173.194.0.0/16  -p all -m comment --comment "Google's range" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 207.32.31.204  -p all -m comment --comment "isp mail server" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 207.32.31.204  -p all -m comment --comment "isp mail server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 207.32.31.196  -p all -m comment --comment "isp mail server" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 207.32.31.196  -p all -m comment --comment "isp mail server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 167.142.225.5  -p all -m comment --comment "name server NS1.NETINS.NET" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 167.142.225.5  -p all -m comment --comment "name server NS1.NETINS.NET" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 207.32.31.195  -p all -m comment --comment "isp server" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 207.32.31.195  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 206.72.26.254  -p all -m comment --comment "isp server" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 206.72.26.254  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 207.32.31.198  -p all -m comment --comment "pop3.walnutel.net:pop3 [207.32.31.198/110]" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 207.32.31.198  -p all -m comment --comment "pop3.walnutel.net:pop3 [207.32.31.198/110]" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 208.80.200.0/21  -p all -m comment --comment "redcondor for walnutel.net support servers-mx, etc Sat Dec 19 20:12:02 CST 2015" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 208.80.200.0/21  -p all -m comment --comment "redcondor for walnutel.net support servers-mx, etc Sat Dec 19 20:12:02 CST 2015" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 208.80.206.63  -p all -m comment --comment "isp mail server Sat Jan  9 08:32:13 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 208.80.206.63  -p all -m comment --comment "isp mail server Sat Jan  9 08:32:13 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 208.80.204.253  -p all -m comment --comment "isp mail server Sat Jan  9 08:34:48 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 208.80.204.253  -p all -m comment --comment "isp mail server Sat Jan  9 08:34:48 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 98.179.31.188  -p all -m comment --comment "knocked Sat Jan 16 12:26:40 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 98.179.31.188  -p all -m comment --comment "knocked Sat Jan 16 12:26:40 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 207.177.27.131  -p all -m comment --comment "via email Sat Jan 16 20:12:44 CST 2016 Sat Jan 16 20:12:44 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 207.177.27.131  -p all -m comment --comment "via email Sat Jan 16 20:12:44 CST 2016 Sat Jan 16 20:12:44 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 68.15.224.232  -p all -m comment --comment "via email Sun Jan 17 18:42:53 CST 2016 Sun Jan 17 18:42:53 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 68.15.224.232  -p all -m comment --comment "via email Sun Jan 17 18:42:53 CST 2016 Sun Jan 17 18:42:53 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 97.107.199.77  -p all -m comment --comment "via email Mon Jan 18 10:22:01 CST 2016 Mon Jan 18 10:22:01 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 97.107.199.77  -p all -m comment --comment "via email Mon Jan 18 10:22:01 CST 2016 Mon Jan 18 10:22:01 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 166.175.63.191  -p all -m comment --comment "via email Sat Jan 30 20:22:53 CST 2016 Sat Jan 30 20:22:53 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 166.175.63.191  -p all -m comment --comment "via email Sat Jan 30 20:22:53 CST 2016 Sat Jan 30 20:22:53 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 70.198.33.1  -p all -m comment --comment "via email Fri Feb  5 19:05:20 CST 2016 Fri Feb  5 19:05:20 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 70.198.33.1  -p all -m comment --comment "via email Fri Feb  5 19:05:20 CST 2016 Fri Feb  5 19:05:20 CST 2016" -j ACCEPT
+/sbin/iptables -wI d_whitelist 1  -o eth0  -d 184.187.14.228  -p all -m comment --comment "via email Fri Feb 12 12:46:37 CST 2016 Fri Feb 12 12:46:37 CST 2016" -j ACCEPT;/sbin/iptables -wI s_whitelist 1  -i eth0  -s 184.187.14.228  -p all -m comment --comment "via email Fri Feb 12 12:46:37 CST 2016 Fri Feb 12 12:46:37 CST 2016" -j ACCEPT
+/sbin/iptables -wI s_privateIPs 1  -i eth0  -s 192.168.0.0/16  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI s_privateIPs 1  -s 172.16.0.0/12  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI s_privateIPs 1  -s 10.0.0.0/8  -p all -m comment --comment "private IPs" -j DROP
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.92.201  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.91.14  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.88.149  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.91.23  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.91.24  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.91.15  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.94.4  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.91.13  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 91.189.89.199  -p all -m comment --comment "Canonical" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 208.67.222.222  -p all -m comment --comment "OpenDNS" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 199.102.46.70  -p all -m comment --comment "local time server hosted by Monticello" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -i lo  -p all -m comment --comment "allow all from 127.0.0.1" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -p all -m comment --comment "established connections are assumed to be OK" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 206.72.26.254  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 207.32.31.195  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 167.142.225.5  -p all -m comment --comment "isp server" -j ACCEPT
+/sbin/iptables -wI s_static_trusted 1  -s 207.32.31.196  -p all -m comment --comment "isp server" -j ACCEPT
 
 
 In Conclusion...
