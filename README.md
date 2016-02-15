@@ -1,10 +1,16 @@
-# robust-linux-firewalling-scripting
+Linux iptables plus scripting firewall
 
 BULLET-PROOF YOUR “OWNER-ACCESS-ONLY” LINUX SERVER FROM HACKERS WITH IPTABLES AND ROBUST SHELL SCRIPTING.
 
 Bare minimum packages and whitelist-only access to your Linux home surveillance &amp;/or automation system
 
-No hackers can get any data or communication at all out of your system when this firewalling solution is installed on it.  First of all, only you know the IP address of your system – it's emailed to you fresh every time your systems gets it changed by DHCP.  Second, only you know how to get your remote IP address permitted by whitelist to become an authorized source address.  This will be by port knocking or email.  Source addresses not whitelisted are ignored as effectively as them being explicitly blacklisted.  Third, you will be immediately notified by email/text of any and all source addresses that your system places on its whitelist.  Fourth, you would still continue to use passwords and ssh keys as is prudent even for systems without firewall protection.
+No hackers can get any data or communication at all out of your system when this firewalling solution is installed on it:
+
+1. Only you know how to get your remote IP address permitted by whitelist to become an authorized source address.  This will be by port knocking or email.  Source addresses not whitelisted are ignored as effectively as them being explicitly blacklisted.  
+2. Only you know the IP address of your system – it's emailed to you fresh every time your systems gets it changed by DHCP.  
+3. You will be immediately notified by email/text of any and all source addresses that your system places on its whitelist.  
+4. You would still continue to use passwords and ssh keys as is prudent even for systems without firewall protection.
+
 All this PLUS the simplicity and robustness inherent in a bare iptables and scripting-only Linux solution, PLUS the option of building an explicit blacklist of first-time hacking packets in real-time for your reference and curiosity, if your system has enough RAM.
 
 INTENDED AUDIENCE
