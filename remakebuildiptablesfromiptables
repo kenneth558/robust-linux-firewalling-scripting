@@ -1,0 +1,310 @@
+root@firewall:/home/homeowner# cat remakebuildiptablesfromiptables|more
+#!/bin/bash
+#  This script is never called by other scripts...it will only be run manually
+# from CLI at your discretion.  Using the currently active iptables ruleset,
+# it makes a fresh ruleset backup script (buildiptables.sh).  Why?  Because
+# iptables chains rule removal actions still leave in the backup script the
+# initial rule creation command along with the rule removal command, and
+# these extraneous entries will just become ugly clutter, especially if they
+# got there because of your oft-testing of the system.  Allow at least a full
+# second run time for every 15-20 rules.
+
+# This script can only handle the most elementary options of a very few of
+# the most common loadable iptables modules.
+# There are many iptables modules and options that this script cannot handle,
+# so if your ruleset uses them, you'll have to add that capability to this
+# script.  This means definitely any module besides comment, limit, recent,
+# multiport, and conntrack, and even many options of those modules.
+
+! [[ -f blacklistme.sh ]] && echo "This must be run from the same directory that blacklistme.sh resides in.  Ensure that blacklistme.sh is chmod for write" && exit
+! [[ $(ls -l blacklistme.sh|awk 'BEGIN { FS = "" } ; {print $3}') == "w" ]] && echo "blacklistme.sh not chmod for write access.  Aborting" && exit
+echo "" > "$0.log"
+trap "cat \"$0.log\"" EXIT
+echo "#!/bin/bash" > newbuildiptables
+echo "echo \"Running buildiptables.sh \$(date)\" >> /home/homeowner/iptables.log" >> newbuildiptables
+echo "echo \"1\" > /proc/sys/net/ipv4/ip_forward" >> newbuildiptables #This rule only applicable for multiple interface systems
+echo "/sbin/iptables -wF" >> newbuildiptables
+echo "/sbin/iptables -wX" >> newbuildiptables
+echo "/sbin/iptables -wt nat -F" >> newbuildiptables
+echo "/sbin/iptables -wt nat -X" >> newbuildiptables
+echo "/sbin/iptables -wt mangle -F" >> newbuildiptables
+echo "/sbin/iptables -wt mangle -X" >> newbuildiptables
+
+# for table in nat filter mangle; do  #TODO
+for table in nat filter; do
+
+#User-defined (non-existent initially) chains have to get made first before any iptables commands to jump to them as targets can succeed
+    for chain in $(iptables -wnt $table -L|egrep "^Chain"|awk '{print $2}');do
+        if [ "$(iptables -wnt $table -L|egrep "^Chain $chain"|awk '{print $3}')" != "(policy" ];then
+             echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"N $chain" >> newbuildiptables
+        else
+             echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"P $chain $(iptables -wnt $table -L|egrep "^Chain $chain"|awk '{print $4}'|sed 's/)//g')" >> newbuildiptables
+        fi
+    done
+#done making user-defined chains, while we were at it we set the policies for other chains, too
+    s_blacklistdone=0;d_blacklistdone=0;s_whitelistdone=0;d_whitelistdone=0
+    for chain in $(iptables -wnt $table -L|egrep "^Chain"|awk '{print $2}');do
+        case "$chain" in
+        "s_blacklist")
+           if [ $d_blacklistdone == "1" ];then continue;fi
+                     ;;
+        "d_blacklist")
+           if [ $s_blacklistdone == "1" ];then continue;fi
+                     ;;
+        "s_whitelist")
+           if [ $d_whitelistdone == "1" ];then continue;fi
+                     ;;
+        "d_whitelist")
+           if [ $s_whitelistdone == "1" ];then continue;fi
+                     ;;
+        esac
+        numofrules=$(/sbin/iptables -wnt $table -L $chain --line-numbers|tail -n-1|awk '{print $1}')
+        if [ $numofrules != "num" ];then
+             echo "pause" >> blacklistme.sh # This means blacklistme.sh must be chmod 7nn
+             for ((rulenum=numofrules; rulenum>=1; rulenum--));do
+#                  :#need to know if chain gets changed during this loop-if so, both rulenum&numofrules needs to be adjusted
+# best thing is to prevent changes during this whole 'for' loop
+
+                  limit="";ctstate="";recent="";logprefix="";multiport=""
+                  rulecontents="$(/sbin/iptables -wnvL $chain $rulenum -t $table)"
+                  place=21
+                  while [ "${rulecontents:$place:1}" != " " ];do
+                       ((place++))
+                  done
+                  while [ "${rulecontents:$place:1}" == " " ];do
+                       ((place++))
+                  done
+                  proto="${rulecontents:$place:10}";proto="${proto%% *}"
+                  target="${rulecontents:12:20}";target="${target%% *}";
+                  interfacein="${rulecontents:(32+(($place))-23):8}";interfacein="${interfacein%% *}"
+                  interfaceout="${rulecontents:(39+(($place))-23):8}";interfaceout="${interfaceout%% *}"
+                  sourceadd="${rulecontents:(46+(($place))-23):19}";firstnonspace="${sourceadd%%[! ]*}"; sourceadd="${sourceadd:${#firstnonspace} }";sourceadd="${sourceadd%% *}";
+                  destadd="${rulecontents:(67+(($place))-23):19}";firstnonspace="${destadd%%[! ]*}";destadd="${destadd:${#firstnonspace} }";destadd="${destadd%% *}";
+                  etc="${rulecontents:(88+(($place))-23)}";etc="${etc:1:${#etc}-1}"
+
+# The following catches occurances of loadable modules whose options
+# can be so freeform as to throw off other module processors.
+# The only two I've used that I know of are comment and LOG modules.
+
+                  if [ "$target" == "LOG" ];then
+                      fulllogcmd="${etc##*'LOG flags '}";
+                      [[ $fulllogcmd = *\ prefix\ \"* ]] && logprefix=" --log-prefix \"${fulllogcmd#*' prefix "'}\"";
+                      logprefix="${logprefix%\"}";
+                      target="$target --log-level ${fulllogcmd:8:1}$logprefix";
+                      etc="${etc%'LOG flags '*' level '*}";
+                  fi;
+
+
+# Now go through known module translators starting with comment
+# because its content can be anything that could throw off others
+# as could the LOG prefix option we dealt with and removed above
+# and because its ending is easily identified without processing
+
+                  comment="${etc%' */'*}";
+                  if [ ${#etc} != ${#comment} ];then
+                      etc="${etc%%'/*'*}${etc##*'*/'}";
+                      comment="${comment##*'/* '}";
+                      comment="${comment#*\*}";
+                      comment=" -m comment --comment \"${comment}\"";
+                  else
+                      comment="";
+                  fi;
+
+#    etc is all but comments and log details
+                  trimmedword=""
+                  advanceawordifmatch () {
+                       trimmedword="${etc%% *}"; #ensure no quotes first
+                       ! [[ -z $1 ]] && ! [[ "$1" == "$trimmedword" ]] && return 1
+                       etc="${etc:${#trimmedword}}";
+                       nextgap="${etc%%[! ]*}";
+                       etc="${etc:${#nextgap}}"
+                       return 0
+                   }
+                  nextgap="${etc%%[! ]*}";
+                  etc="${etc:${#nextgap}}";
+
+                 while modulename="${etc%% *}";! [[ -z $modulename ]];do
+                      advanceawordifmatch
+                      case "$modulename" in
+                         "recent:")
+                             if [[ "$invert" == "module level inversion" ]];then
+                                  etc1="${etc%%'UPDATE'*}${etc%%'CHECK'*}${etc%%'SET'*}"
+                                  [[ ${#etc1} -eq $(( ${#etc} * 3 )) ]] && (echo "Could not identify reason for inversion, rule $rulenum, chain $chain in table $table.  Unable to continue in good faith" >> "$0.log";exit)
+                             fi
+                             recent=" -m recent";
+                             while option="${etc%% *}";! [[ -z $option ]];do
+                                  case  "$option" in
+                                      "UPDATE")
+                                          if [[ "$invert" == "module level inversion" ]];then
+                                               invert=""
+                                               recent+=" !"
+                                          fi
+                                          advanceawordifmatch
+                                          recent+=" --update"
+                                         ;;
+                                      "CHECK")
+                                          if [[ "$invert" == "module level inversion" ]];then
+                                          if [[ "$invert" == "module level inversion" ]];then
+                                               invert=""
+                                               recent+=" !"
+                                          fi
+                                          advanceawordifmatch
+                                          recent+=" --rcheck"
+                                          ;;
+                                      "SET")
+                                          if [[ "$invert" == "module level inversion" ]];then
+                                               invert=""
+                                               recent+=" !"
+                                          fi
+                                          advanceawordifmatch
+                                          recent+=" --set"
+                                         ;;
+                                      "name:")
+                                          advanceawordifmatch
+                                          recent+=" --name ${etc%% *}";
+                                          advanceawordifmatch
+                                         ;;
+                                      "seconds:")
+                                          advanceawordifmatch
+                                          recent+=" --seconds ${etc%% *}";
+                                          advanceawordifmatch
+                                         ;;
+                                      "hit count:")
+                                          advanceawordifmatch
+                                          recent+=" --hitcount ${etc%% *}";
+                                          advanceawordifmatch
+                                         ;;
+                                      "reap")
+                                          advanceawordifmatch
+                                          recent+=" --reap"
+                                         ;;
+                                      "TTL-Match")
+                                          advanceawordifmatch
+                                          recent+=" --rttl"
+                                         ;;
+                                      "REMOVE")
+                                          advanceawordifmatch
+                                          recent+=" --remove"
+                                         ;;
+                                      "side:") # this is the only way we know that the recent module should end
+                                          ! [[ -z "$invert" ]] && (echo "Could not identify reason for inversion, rule $rulenum, chain $chain in table $table.  Unable to continue in good faith" >> "$0.log";exit)
+                                          advanceawordifmatch
+                                          if [[ "$etc" == source\ mask:\ 255.255.255.255* ]];then
+                                               advanceawordifmatch
+                                               advanceawordifmatch
+                                               advanceawordifmatch
+                                               break;
+                                          fi
+                                        ;;
+                                      "!") #for future use, man pages indicate "remove", "seconds", "hitcounts" but test first.
+                                          advanceawordifmatch
+                                          invert="option level inversion"
+                                        ;;
+                                      *) # abort because we don't understand the recent module ending in anything except side: et. al. see above
+                                          echo "Unexpected word \"$option\" in rule number $rulenum of chain \"$chain\" in filter \"$filter\". Aborting" >> "$0.log";exit
+                                        ;;
+                                  esac;
+                             done;
+                          ;;
+                         "limit:")
+                               advanceawordifmatch "avg"
+                               [[ "$?" == "1" ]] && (echo "Incompatible option $trimmedword" >> "$0.log";exit);
+                               advanceawordifmatch
+                               limit=" -m limit --limit $trimmedword --limit-burst ";
+                               advanceawordifmatch "burst"
+                               [[ "$?" == "1" ]] && (echo "Incompatible option $trimmedword" >> "$0.log";exit);
+                               advanceawordifmatch
+                               limit+="$trimmedword";
+                            ;;
+                         "ctstate")
+                               advanceawordifmatch
+                               ctstate=" -m conntrack --ctstate $trimmedword";
+                           ;;
+                         "multiport")
+                               advanceawordifmatch
+                               multiport=" -m multiport --$trimmedword"
+                               advanceawordifmatch
+                               if [[ "${trimmedword:0:1}" == "!" ]];then
+                                     trimmedword="${trimmedword:1}";
+                                     multiport=" -m multiport ""!""${multiport:13}"
+                               fi
+                               multiport+=" $trimmedword"
+                           ;;
+                         "$proto")
+                             proto=" -p $proto"
+                             while option="${etc%% *}";! [[ -z "$option" ]] && [[ "$option" =~ [ds]pt:* ]];do
+#                                  option="${option##*':'}"
+                                  if [[ "${option:4:1}" == "!" ]];then
+                                        proto+=" ! --${option:0:1}port ${option:5}"
+                                  else
+                                        proto+=" --${option:0:1}port ${option:4}"
+                                  fi
+                                  advanceawordifmatch
+                             done
+                           ;;
+                         "to:"*)
+                               if [ "$target" == "DNAT" ];then
+                                   advanceawordifmatch
+                                   target="$target --to-destination ${modulename:3}";
+                               else
+                                   echo "Unknown option \"$modulename\", rule $rulenum, chain $chain in table $table.  Unable to continue in good faith" >> "$0.log";exit
+                               fi
+                          ;;
+                           "!")
+                               invert="module level inversion"
+                          ;;
+                           *)
+                              echo "Could not identify $modulename, rule $rulenum, chain $chain in table $table.  Unable to continue in good faith" >> "$0.log";exit
+                          ;;
+                      esac;
+                  done
+                  [[ "${proto:0:1}" == " " ]] || proto=" -p $proto"
+                  commandmidpart="";commandmidpart1=""
+                  if [ "$interfacein" != "*" ];then commandmidpart="$commandmidpart -i $interfacein ";if [ $chain == "s_blacklist" ] || [ $chain == "s_whitelist" ];then commandmidpart1="$commandmidpart1 -o $interfacein ";fi;fi
+                  if [ "$interfaceout" != "*" ];then commandmidpart="$commandmidpart -o $interfaceout ";if [ $chain == "d_blacklist" ] || [ $chain == "d_whitelist" ];then commandmidpart1="$commandmidpart1 -i $interfaceout ";fi;fi
+                  if [ "$sourceadd" != "0.0.0.0/0" ];then commandmidpart="$commandmidpart$( if [[ "${sourceadd:0:1}" == "!" ]];then echo " ! -s ${sourceadd:1}";else echo " -s $sourceadd";fi) ";if [ $chain == "s_blacklist" ] || [ $chain == "s_whitelist" ];then commandmidpart1="$commandmidpart1$( if [[ "${sourceadd:0:1}" == "!" ]];then echo " ! -d ${sourceadd:1}";else echo " -d $sourceadd";fi) ";fi;fi
+                  if [ "$destadd" != "0.0.0.0/0" ];then commandmidpart="$commandmidpart$( if [[ "${destadd:0:1}" == "!" ]];then echo " ! -d ${destadd:1}";else echo " -d $destadd";fi) ";if [ $chain == "d_blacklist" ] || [ $chain == "d_whitelist" ];then commandmidpart1="$commandmidpart1$( if [[ "${destadd:0:1}" == "!" ]];then echo " ! -s ${destadd:1}";else echo " -s $destadd";fi) ";fi;fi
+                  ! [[ -z $target ]] && target=" -j $target"
+                  commandmidpart="$commandmidpart$proto$multiport$comment$ctstate$recent$limit$target"
+                  commandmidpart1="$commandmidpart1$proto$multiport$comment$ctstate$recent$limit$target"
+                  case "$chain" in
+                  "s_blacklist")
+                          echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I $chain 1 $commandmidpart;/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I d_blacklist 1 $commandmidpart1" >> newbuildiptables
+                     ;;
+                  "d_blacklist")
+                          echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I $chain 1 $commandmidpart;/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I s_blacklist 1 $commandmidpart1" >> newbuildiptables
+                     ;;
+                  "s_whitelist")
+                          echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I $chain 1 $commandmidpart;/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I d_whitelist 1 $commandmidpart1" >> newbuildiptables
+                     ;;
+                  "d_whitelist")
+                          echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I $chain 1 $commandmidpart;/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I s_whitelist 1 $commandmidpart1" >> newbuildiptables
+                     ;;
+                  *)
+                     echo "/sbin/iptables -w"$(if [ "$table" != "filter" ];then echo "t $table -";fi)"I $chain 1 $commandmidpart" >> newbuildiptables
+                     ;;
+                  esac
+             done
+             case "$chain" in
+             "s_blacklist")
+                     s_blacklistdone=1
+                     ;;
+             "d_blacklist")
+                     d_blacklistdone=1
+                     ;;
+             "s_whitelist")
+                     s_whitelistdone=1
+                     ;;
+             "d_whitelist")
+                     d_whitelistdone=1
+                     ;;
+             esac
+             sed -i '/^pause/d' blacklistme.sh
+        fi
+    done
+done
+cp newbuildiptables buildiptables.sh
+chmod 755 buildiptables.sh
+sed -i '/^pause/d' blacklistme.sh
+echo "Complete. Be sure the 'pause' line at the end of blacklistme.sh got removed !!!"
+cat saveforlater
