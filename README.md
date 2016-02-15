@@ -1,9 +1,9 @@
 # robust-linux-firewalling-scripting
-bare minimum packages and whitelist-only access to your Linux home surveillance &amp;/or automation system
 
 BULLET-PROOF YOUR “OWNER-ACCESS-ONLY” LINUX SERVER FROM HACKERS WITH IPTABLES AND ROBUST SHELL SCRIPTING.
+Bare minimum packages and whitelist-only access to your Linux home surveillance &amp;/or automation system
 
-No hackers, only you can get any data or communication at all out of your system when this firewalling solution is installed on it.  First of all, only you know the IP address of your system – it's emailed to you fresh every time your systems gets it changed by DHCP.  Second, only you know how to get your remote IP address permitted by whitelist to become an authorized source address.  This will be by port knocking or email.  Source addresses not whitelisted are ignored as effectively as them being explicitly blacklisted.  Third, you will be immediately notified by email/text of any and all source addresses that your system places on its whitelist.  Fourth, you would still continue to use passwords and ssh keys as is prudent even for systems without firewall protection.
+No hackers can get any data or communication at all out of your system when this firewalling solution is installed on it.  First of all, only you know the IP address of your system – it's emailed to you fresh every time your systems gets it changed by DHCP.  Second, only you know how to get your remote IP address permitted by whitelist to become an authorized source address.  This will be by port knocking or email.  Source addresses not whitelisted are ignored as effectively as them being explicitly blacklisted.  Third, you will be immediately notified by email/text of any and all source addresses that your system places on its whitelist.  Fourth, you would still continue to use passwords and ssh keys as is prudent even for systems without firewall protection.
 All this PLUS the simplicity and robustness inherent in a bare iptables and scripting-only Linux solution, PLUS the option of building an explicit blacklist of first-time hacking packets in real-time for your reference and curiosity, if your system has enough RAM.
 
 INTENDED AUDIENCE
@@ -20,8 +20,10 @@ INTENDED AUDIENCE
 
  -- You understand the advantages of having your system TOTALLY invisible to anyone but you, your friends, and allies.  (IPv6 visibility MIGHT be required)  
 
- -- You want to minimize the number of application packages installed in order to simplify your system's tendency to break with package upgrades.
+ -- You want to minimize the number of application packages installed in order to maximize your system's robustness.
 
+ -- You don't mind learning iptables and making the initial ruleset unique to your configuration.
+ 
  -- You are knowledgeable, willing, and able enough to lightly modify one or two of the short scripts presented here to suit your environment.  Modifications to these scripts will be necessary for the system to use your ISP-provided email account to send system-generated email/texts from and to know the email addresses you want to receive those IP address changes and iptables-relaxing changes alerts in.  You should also expect a certain amount of script troubleshooting to be needed during installation, Muphy's Law.  This 'feature' helps me get this published sooner.
 
  -- You can spare a dedicated email account not requiring access via SSL, for back- or front-door communications to your system via the Internet.  In my case, my local ISP allows non-SSL access to the email accounts they provide their customers.  Perfect for me, because I would have absolutely no use otherwise for an ISP-provided email account, given how often I seem to change or drop ISPs due to oft-changing circumstances. NOTE - I'VE NOT INCLUDED A PORT KNOCKING IMPLEMENTATION YET.  I USE knockd MYSELF.  IF YOU WANT AN iptables-ONLY IMPLEMENTATION, SEE THESE TWO WEB SITES:  https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwj-loelhvnKAhVBxGMKHTebBskQFggdMAA&url=http%3A%2F%2Fwww.microhowto.info%2Fhowto%2Fimplement_port_knocking_using_iptables.html&usg=AFQjCNHsxT8RS_LP1msujbdpnKvJK8z6yg&sig2=zA7piC7R1jB6JNhrnHrWVQ OR https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=2&cad=rja&uact=8&ved=0ahUKEwj-loelhvnKAhVBxGMKHTebBskQFggjMAE&url=https%3A%2F%2Fwww.digitalocean.com%2Fcommunity%2Ftutorials%2Fhow-to-configure-port-knocking-using-only-iptables-on-an-ubuntu-vps&usg=AFQjCNHIx585V_swhfX7PHDmxKhYAIlCew&sig2=eDqhl3HFXVUEq5yKxCuNaw
