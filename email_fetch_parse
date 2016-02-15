@@ -1,0 +1,185 @@
+[3;J
+#!/bin/bash
+
+# THIS SCRIPT ALLOWS FOR CONTROL VIA EMAIL
+# I suggest it be launched with a special port
+# knock logged in kern.log by virtue of an
+# iptables rule in the INPUT chain that
+# identifies itself with the term "email-reader"
+# in its comments. The script searching for that
+# port-match and launching this script is called
+# blacklistme.sh.  By maintaining a dynamic
+# blacklist for a while you'll better be able
+# to determine a good port for you.
+
+# The controlling email should be already sent
+# before knocking said port because this
+# script has no way of knowing for sure that
+# an email will come in a timely manner.
+
+# Numerous grep commands are contained herein
+# that could be refined to use separate text
+# files to hold the search terms/keywords. I did
+# not so refine them simply to minimize the
+# number of files in this project since I am
+# targeting users who might get lost in
+# an excessive number of files.  I would
+# encourage you to modify those grep commands
+# yourself if you value the finer points of
+# programming.
+
+# Example: (roughly, please don't criticize imperfection between the lists)
+#     echo "$(grep -e "Content-Type: text/plain; charset=UTF-8" -iwe "remove" -e "undo" -e "delete" -e "whitelist" -e "permit" -e "let" -e "on" -e "open" -e "allow" -e "blacklist" -e "off" -e "stop" -e "block" -e "recent" -e "report" -e "shut" -e "close" -e "prevent" -e "recent" -e "me" -e "report" -e "what" -e "who" -e "whoami" -e "kern" -e "kernlog" -e "kern.log" <(echo "$mailcontentline"))" >> /home/homeowner/mailcontent
+#
+# becomes (except the email content header line becomes case-insensitive along with everything else):
+
+#     cat *.keywords > allwords.tmp; echo "$(grep -wif allwords.tmp <(echo "$mailcontentline"))" >> /home/homeowner/mailcontent;rm allwords.tmp
+#       -the grep -f flag is what does it
+#
+# given the following files exist in the appropriate directory, and
+# there are no empty lines in the files, including the last ones:
+
+#    'emailbegins.keywords' having the following contents: (case becomes insensitive if following the example given)
+#       Content-Type: text/plain; charset=UTF-8
+
+#    'blacklistlog.keywords' having the following contents:
+#       log
+#       logging
+
+#    'tailkernlog&emailresults.keywords' having the following contents:
+#       recent
+#       report
+#       kern
+#       kernlog
+#       kern.log
+#       tail
+#       who
+#       whoami
+#       what
+#       me
+
+#    'deleting.keywords' having the following contents:
+#       remove
+#       undo
+#       delete
+#       end
+#       stop
+
+#    'blacklisting.keywords' having the following contents:
+#       blacklist
+#       off
+#       block
+#       shut
+#       close
+#       prevent
+
+#    'whitelisting.keywords' having the following contents:
+#       whitelist
+#       permit
+#       let
+#       on
+#       open
+#       allow
+
+[ $(( $(tail -n-2 $0|grep -c "^#running"))) -gt 0 ] && exit
+until [ $(( $(tail -n-2 $0|grep -c "^#running"))) -gt 0 ];do
+      echo "#running" >> $0
+      sleep 1
+done
+trap "sed -i '/^\#running/d' $0" EXIT
+[[ $- = *i* ]] && echo "Connecting to email...."
+port=110;MAIL_PROT="pop3"
+#echo "${2//[0-9]}"
+[ ! -z $2 ] && [ -z "${2//[0-9]}" ] && [ $2 -ge 0 ] && [ $2 -le 65535 ] &&  port=$2
+[ ! -z ${3,S} ] && [ ${3,S} == "s" ] && MAIL_PROT="smtp"
+[ ! -z ${3,S} ] && [ ${3,I} == "i" ] && MAIL_PROT="imap"
+#echo $port
+#echo "<$MAIL_PROT>"
+MAIL_FROM=$1 #"timeiselastic@walnutel.net"
+MAIL_FROM="timeiselastic@walnutel.net"
+#echo "$MAIL_FROM"
+accountname=$(echo "$MAIL_FROM" | /usr/bin/awk -F@ '{print $1}');domainname=$(echo  "$MAIL_FROM" | /usr/bin/awk -F@ '{print $2}')
+#echo "$accountname and $MAIL_PROT.$domainname"
+#echo "/dev/tcp/$MAIL_PROT.$domainname/$port"
+exec 5>&-;wait
+exec 5<>/dev/tcp/$MAIL_PROT"."$domainname/$port
+[[ $- = *i* ]] && echo "Executed the connect, now trying to read..."
+read -t 2 -u 5 HELO # <&5
+[ x$1 == "x-v" ] && echo -e "GOT: \n$HELO"
+[ x$1 == "x-v" ] && echo "SENDING: username"
+echo -e "user timeiselastic\r" >&5
+#wait
+read -t 2 -u 5 sendyourpassword # <&5
+[ x$1 == "x-v" ] && echo "$sendyourpassword"
+[ x$1 == "x-v" ] && echo "SENDING: password"
+echo -e "pass 4311979_a\r" >&5
+#wait
+read -t 2 -u 5  maildroplockedandready # <&5
+[ x$1 == "x-v" ] && echo "$maildroplockedandready"
+[ x$1 == "x-v" ] && echo "SENDING: list"
+echo -e "list\r" >&5
+[ -f /home/homeowner/mailcontent ] && rm /home/homeowner/mailcontent
+numofemails=-1
+while read  -t 2 -u 5 emailtitle; do
+    [ $(( ${#emailtitle} )) -lt 3 ] && break
+    if [ $(( ${#emailtitle} )) -lt 20 ]; then
+         #add to array of emailtitlnums
+         numofemails=$(( $numofemails + 1 ))
+         [ x$1 == "x-v" ] && echo "$numofemails"
+         emailtitlenums[ $((numofemails)) ]=${emailtitle% *}
+    fi
+done
+if [ $((numofemails)) -gt -1 ]; then
+    [[ $- = *i* ]] && echo "Retrieving $numofemails email[s]..."
+    for i in `seq 0 $((numofemails))`;do
+         echo -e "RETR ${emailtitlenums[i]}\r" >&5
+          boundary=""
+          while read  -t 2 -u 5 mailcontentline;do
+             [ $(( ${#mailcontentline} )) -lt 2 ] && continue
+             mailcontentline="${mailcontentline:: -1} " #strip the linefeed and put space there instead
+              [[ $- = *i* ]] && echo "$mailcontentline" #
+              if [ -z "$boundary" ];then [ $(echo "$mailcontentline"|grep -e "^Content-Type: "|grep -c "; boundary=") -gt 0 ] && boundary="$(echo "$mailcontentline"|grep -e "^Content-Type: " -e "; boundary="|/usr/bin/awk -F= '{print $2}')" && boundarymarker=1
+              else
+                  echo "$(grep -iwe "remove" -e "undo" -e "delete" -e "whitelist" -e "permit" -e "let" -e "on" -e "open" -e "allow" -e "blacklist" -e "off" -e "stop" -e "block" -e "recent" -e "report" -e "shut" -e "close" -e "prevent" -e "recent" -e "me" -e "report" -e "what" -e "who" -e "whoami" -e "kern" -e "kernlog" -e "kern.log" -e "log" -e "end" -e "logging" <(echo "$mailcontentline"))"|while read line;do [ $(( ${#line} )) -gt 1 ] && echo "$line" >> /home/homeowner/mailcontent;done
+                  [ $(bc <<<"${#mailcontentline} - ${#boundary}") -eq 2 ] && [ "${mailcontentline:2: -1}" == "${boundary:: -1}" ] && [ $(( ++boundarymarker )) -gt 2 ] && (read  -t 2 -u 5 mailcontentline;read -t 2 -u 5  mailcontentline;read  -t 2 -u 5 mailcontentline;read -t 2 -u 5 mailcontentline) && break # && echo "Retrieved one message" && break
+              fi
+          done
+    done
+    for i in `seq 0 $((numofemails))`;do
+         echo -e "dele ${emailtitlenums[i]}\r" >&5
+         while read -t 2 -u 5 deleteresponse;do [ $(( ${#deleteresponse} )) -lt 1 ] && break;done
+    done
+     [ -f /home/homeowner/valid_instructions_from_email ] && rm /home/homeowner/valid_instructions_from_email
+#This will give us the subject line of first email: head -n+$(( $(grep -m 1 --line-number "Content-Type: text/plain; charset=UTF-8" < mailcontent|awk -F: '{print $1}') - 1)) mailcontent|grep -E '^Subject'
+#This will start us at content of first email: tail -n+$(( 2 + $(grep -m 1 --line-number "Content-Type: text/plain; charset=UTF-8" < mailcontent|awk -F: '{print $1}'))) mailcontent
+     cat /home/homeowner/mailcontent |while read line; do line1="$(echo "$line "|grep -E -o "\b((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])( |/[1-2]?[0-9] |/3[0-2] )")" && ( echo "$line1"|while read ipadd;do echo "$ipadd $line" >> /home/homeowner/valid_instructions_from_email; done ) || (line1="$(echo "$line"|grep -wie "recent" -e "me" -e "report" -e "what" -e "who" -e "whoami" -e "kern" -e "kernlog" -e "kern.log" -e "tail" -e "log")" && ( echo "$line1" >> /home/homeowner/valid_instructions_from_email ));done
+     cat /home/homeowner/valid_instructions_from_email |while read line
+     do option=""
+          [ $(grep -cwie "undo" -e "remove" -e "delete" -e "end" -e "stop" <(echo "$line")) -gt 0 ] && option="-r"
+          if [ $(grep -cwie "recent" -e "report" -e "kern" -e "kernlog" -e "kern.log" -e "tail" -e "who" -e "whoami" -e "what" -e "me" <(echo "$line")) -gt 0 ];then
+              script="echo \"$(tail /var/log/kern.log)\"|mail -s \"As you requested\" \"kenlovesjesus@gmail.com\""
+          elif [ $(grep -cwie "permit" -e "let" -e "on" -e "open" -e "allow" -e "whitelist" <(echo "$line")) -gt 0 ]; then
+              script="/home/homeowner/openall.sh $(echo $line|/usr/bin/awk '{print $1}') $option \"via email $(date)\""
+          elif [ $(grep -cwie "log" -e "logging" <(echo "$line")) -gt 0 ];then
+              if [ $(( ${#option} )) -eq 0 ];then script="/sbin/iptables -wI INPUT $(/sbin/iptables -wnL INPUT --line-numbers|grep "s_privateIPs"|awk '{print $1 + 1}') -m comment --comment \"via email $(date) - remove when not needed\" -j LOG"
+              elif [ $(/sbin/iptables -wnL INPUT|grep -c "remove when not needed") -gt 0 ];then script="[[ $(/sbin/iptables -wnL INPUT --line-numbers|grep -m 1 "remove when not needed"|awk '{print $1}') -gt 0 ]] && /sbin/iptables -wD INPUT $(/sbin/iptables -wnL INPUT --line-numbers|grep -m 1 "remove when not needed"|awk '{print $1}')"
+              else
+                  script=""
+              fi
+              [ $(( ${#script} )) -ne 0 ] && echo "$script" >> /home/homeowner/buildiptables.sh
+          else
+              script="/home/homeowner/blacklistme.sh $(echo $line|/usr/bin/awk '{print $1}') $option \"via email $(date)\""
+          fi
+          echo "/home/homeowner/email_fetch_parse is sending the following command to be executed:" >> /home/homeowner/email_fetch_parse.log
+          echo "$script"  >> /home/homeowner/email_fetch_parse.log
+          [ $(( ${#script} )) -ne 0 ] && eval "$script"
+     done
+else
+     [[ $- = *i* ]] && echo "No emails were in the inbox"
+fi
+#wait
+#exec 5>&-
+[[ $- = *i* ]] && echo "SENDING: QUIT"
+echo -e "QUIT\r" >&5
+wait
+exec 5>&-
