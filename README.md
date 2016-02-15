@@ -114,9 +114,9 @@ This file comes into play when the postfix-provided mail command is executed fro
 
 
 remakebuildiptablesfromiptables script -- too large for inclusion in readme
-email_fetch_parse script
-openall.sh script
-blacklistme.sh script
+email_fetch_parse script -- too large for inclusion in readme
+openall.sh script -- too large for inclusion in readme
+blacklistme.sh script -- too large for inclusion in readme
 
 
 In Conclusion...
