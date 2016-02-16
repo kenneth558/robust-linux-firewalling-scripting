@@ -2,6 +2,7 @@
 #  chmod this script as 7nn becasue it gets modified by another script (remakerebuildiptabesfromiptables)
 # THIS SCRIPT IS LAUNCHED IN CRONTAB AT REBOOT AND OFTEN THEREAFTER FOR REAL-TIME FIREWALLING BLACKLIST MAINTENANCE
 #This script will add or remove to iptables (IPv4) s_blacklist and d_blacklist chains
+emaildestination='youremail@gmail.com'
 
 if [ "x$(tail -n-1 $0|/usr/bin/awk '{printf $1}')" == "xpause" ]; then echo "$1" >> /home/homeowner/saveforlater;echo "$2" >> /home/homeowner/saveforlater;exit;fi
 
@@ -28,7 +29,7 @@ else
                     do sleep 1;
                  done;
                  echo "$cmdline0" >> /home/homeowner/buildiptables.sh
-                 echo "$cmdline0"|mail -s "Firewall blacklist $1" "youremail@gmail.com"
+                 echo "$cmdline0"|mail -s "Firewall blacklist $1" "$emaildestination"
          done
      fi
 fi
