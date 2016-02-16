@@ -1,5 +1,6 @@
-[3;J
 #!/bin/bash
+systemcommandsemail="systemcommandsemail@gmail.com"
+systemacctpassword="secretpassword"
 
 # THIS SCRIPT ALLOWS FOR CONTROL VIA EMAIL
 # I suggest it be launched with a special port
@@ -95,10 +96,11 @@ port=110;MAIL_PROT="pop3"
 [ ! -z ${3,S} ] && [ ${3,I} == "i" ] && MAIL_PROT="imap"
 #echo $port
 #echo "<$MAIL_PROT>"
-MAIL_FROM=$1 #"timeiselastic@walnutel.net"
-MAIL_FROM="timeiselastic@walnutel.net"
+MAIL_FROM=$1 
+MAIL_FROM="$systemcommandsemail"
 #echo "$MAIL_FROM"
-accountname=$(echo "$MAIL_FROM" | /usr/bin/awk -F@ '{print $1}');domainname=$(echo  "$MAIL_FROM" | /usr/bin/awk -F@ '{print $2}')
+accountname=$(echo "$MAIL_FROM" | /usr/bin/awk -F@ '{print $1}');
+domainname=$(echo  "$MAIL_FROM" | /usr/bin/awk -F@ '{print $2}')
 #echo "$accountname and $MAIL_PROT.$domainname"
 #echo "/dev/tcp/$MAIL_PROT.$domainname/$port"
 exec 5>&-;wait
@@ -107,12 +109,12 @@ exec 5<>/dev/tcp/$MAIL_PROT"."$domainname/$port
 read -t 2 -u 5 HELO # <&5
 [ x$1 == "x-v" ] && echo -e "GOT: \n$HELO"
 [ x$1 == "x-v" ] && echo "SENDING: username"
-echo -e "user timeiselastic\r" >&5
+echo -e "user $accountname\r" >&5
 #wait
 read -t 2 -u 5 sendyourpassword # <&5
 [ x$1 == "x-v" ] && echo "$sendyourpassword"
 [ x$1 == "x-v" ] && echo "SENDING: password"
-echo -e "pass 4311979_a\r" >&5
+echo -e "pass $systemacctpassword\r" >&5
 #wait
 read -t 2 -u 5  maildroplockedandready # <&5
 [ x$1 == "x-v" ] && echo "$maildroplockedandready"
