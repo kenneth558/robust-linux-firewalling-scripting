@@ -74,9 +74,13 @@ The Components
 Packages to install on your server
 
  -- iptables (any Linux firewalling needs this)
+
  -- iptables-persistent (firewall rules persistence)
+
  -- mailutils (to alert owner by email or text)
+
  -- inotify-tools (good alternative to polling for changes)
+
  -- this set of scripts installed while your are root, including crontab.   This root requirement stems from the iptables commands in all these scripts needing it.  The scripts also need chmod 7nn rather than 5nn because a couple of them get modified to prevent their execution when they might produce conflicts if they executed
  
  Configuration scripting: crontab
