@@ -134,6 +134,8 @@ openall.sh script -- too large for inclusion in readme
 blacklistme.sh script -- too large for inclusion in readme
 
 FINALLY:
+See the wiki.
+
 "seed" your iptables ruleset manually--I suggest just running some of these commands from CLI: The first ones wipe clean all iptables, many later ones are only applicable if your system is on my same ISP (Walnut Communications).  The order they are in is how remakebuildiptablesfromiptables puts them when you run that script -- backwards because you use the insert (I) instead of append (A) option.
 
 /sbin/iptables -wF
