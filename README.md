@@ -303,9 +303,15 @@ If you end up seeking an alternative from what I presented to you here, I would 
 (That lack of persistence is addressed in my scripting methodology by using a backup shell script, buildiptables.sh, which can always restore the iptables ruleset and will do so automatically when needed.  In my opinion, this backup script system is only possible with iptables by not using an iptables front-end.)
 
 Still TODO:
+
 – Do a better job on this documentation.
+
 – Develop an installation script to reduce the skill level requirement of installers.
- -- Integrate with fwknop capability
+
+--  Integrate with fwknop capability
+ 
 – Develop IP address consolidation for iptables rules.  At the rate of my blacklist formation, without address consolidation I estimate that my blacklist would grow to 150,000 entries in 2-3 years.  Even as robust as iptables is, I don't know that it was designed for that large of rulesets.  Integrate the services of ipset and geoip if beneficial.
+
 – Add IPv6 functionality.
+
 – Make code look better
