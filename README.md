@@ -120,9 +120,11 @@ reboot nice -n19 inotifywait...  … /var/lib/dhcp/dhclient.eth0.leases... For d
 Shell script files, adjust details for your situation.  All go in home directory
 
 .mailrc -- too large for inclusion in readme
+
 Only needed for sending emails from the scripts.  If you have your system doing that to your satisfaction already, you might be better off not even installing this because your system might be using the procmail/sendmail combo instead of the postfix/mail combo I'm using.  Test for whether you need this configuration file with the command line test: echo “content”|mail -s “subject line” “youremail@gmail.com”.  If your account receives the email straightaway (not getting it discriminated against by spam filters) then you don't need nor want this file – it reveals your password.
 
-What this file does
+What this file does:
+
 More and more often, email MDAs discriminate against receiving unauthenticated emails.  This file is part of making outbound emails from your system get authenticated so they are more reliably sent to addresses controlled by discriminating MDAs.  The email account it refers to is the one your system will use in order to authenticate into for the sole purpose of sending authenticated emails out, and yet it can be the same one you want your emails to be sent to.  Basically, any normal email account works.  I actually have this being the same account that my system sends the notices to me to.
 
 This file comes into play when the postfix-provided mail command is executed from CLI or scripts openall.sh, blacklistme.sh, and newip_no_mysql.sh.
