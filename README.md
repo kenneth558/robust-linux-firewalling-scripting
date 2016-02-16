@@ -134,10 +134,14 @@ More and more often, email MDAs discriminate against receiving unauthenticated e
 This file comes into play when the postfix-provided mail command is executed from CLI or scripts openall.sh, blacklistme.sh, and newip_no_mysql.sh.
 
 
-remakebuildiptablesfromiptables script -- too large for inclusion in readme
-email_fetch_parse script -- too large for inclusion in readme
-openall.sh script -- too large for inclusion in readme
-blacklistme.sh script -- too large for inclusion in readme
+remakebuildiptablesfromiptables script -- too large for inclusion in readme.  What this file does: see comments within it
+
+email_fetch_parse script -- too large for inclusion in readme.  What this file does: see comments within it
+
+openall.sh script -- too large for inclusion in readme.  What this file does: see comments within it
+
+blacklistme.sh script -- too large for inclusion in readme.  What this file does: see comments within it
+
 
 FINALLY:
 See the wiki.
