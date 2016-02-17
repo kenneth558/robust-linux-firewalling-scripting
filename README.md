@@ -2,7 +2,7 @@ Linux iptables plus scripting firewall
 
 BULLET-PROOF YOUR “OWNER-ACCESS-ONLY” LINUX SERVER FROM HACKERS WITH IPTABLES AND ROBUST SHELL SCRIPTING.
 
-Bare minimum packages and whitelist-only access to your Linux home surveillance &amp;/or automation system
+Bare minimum packages and whitelist-only access to your Linux home surveillance &amp;/or automation system such as NEST or WeMo,  or your WiFi router.
 
 No hackers can get any data or communication at all out of your system when this firewalling solution is installed on it:
 
