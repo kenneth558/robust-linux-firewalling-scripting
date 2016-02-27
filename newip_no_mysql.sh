@@ -8,18 +8,6 @@ file_to_store_ip='/usr/oldip'
 #variable to hold gotten public IP address
 ip_from_resolver=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
-#    /sbin/iptables -I INPUT $(/sbin/iptables -L INPUT -nv --line-numbers|grep -m 1 -w DROP|awk  '{print $1 }') -s $ip_from_resolver -j ACCEPT
-#    /sbin/iptables -I FORWARD $(/sbin/iptables -L FORWARD -nv --line-numbers|grep -m 1 -w DROP|awk  '{print $1 }') -s $ip_from_resolver -j ACCEPT 
-#    /sbin/iptables -I FORWARD $(/sbin/iptables -L FORWARD -nv --line-numbers|grep -m 1 -w DROP|awk  '{print $1 }') -d $ip_from_resolver -j ACCEPT
-#    /sbin/iptables -I OUTPUT $(/sbin/iptables -L OUTPUT -nv --line-numbers|grep -m 1 -w DROP|awk  '{print $1 }') -d $ip_from_resolver -j ACCEPT
-
- =~ ^((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])((/[0-2]?[0-9])|(/3[0-2]))?$ ]]
-
-#if [ $(/sbin/iptables -w -L INPUT -nv --line-numbers|grep -m 1 -c -w $ip_from_resolver) == 0 ]; then
-#    echo "$ip_from_resolver not found in INPUT chain"
-#     /sbin/iptables -w -I INPUT $(/sbin/iptables -w -L INPUT -nv --line-numbers|grep -m 1 -w DROP|awk  '{print $1 }') -s $ip_from_resolver -j ACCEPT
-#fi
-
 if [[ $ip_from_resolver =~ ^((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$ ]];
 then
     if ( [ -f $file_to_store_ip ] );
