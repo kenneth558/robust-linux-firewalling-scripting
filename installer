@@ -2,6 +2,9 @@
 echo "Sorry, still under development ... press a key to continue"
 read -n1 -r
 #  Beginning of copyright message
+if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script won't be able to do anything except\
+\\ndisplay menus.  No changes can be made to this computer unless you re-launch\
+\\nthis script as root.  Press a key to acknowledge...\n";read -n1 -r;fi
 echo -e "\nCopyright 2016 - Kenneth L. Anderson MCSE, RDH, BGS, BT"\
      "\n\nThis work of authorship is made available to you under only one out of the"\
      "\nfollowing two arrangements.  In both arrangements, this copyright message must"\
@@ -67,22 +70,22 @@ until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[
     dirsign="/"
     usrdir="";localdir="";sharedir="";bindir="";sbindir=""
     cntr="${D2b[counter]}"
-    [[ "${cntr:4:1}" == "1" ]] && sbindir="/sbin"
-    [[ "${cntr:3:1}" == "1" ]] && bindir="/bin"
-    [[ "${cntr:2:1}" == "1" ]] && sharedir="/share"
-    [[ "${cntr:1:1}" == "1" ]] && localdir="/local"
     [[ "${cntr:0:1}" == "1" ]] && usrdir="/usr"
+    [[ "${cntr:1:1}" == "1" ]] && localdir="/local"
+    [[ "${cntr:2:1}" == "1" ]] && sharedir="/share"
+    [[ "${cntr:3:1}" == "1" ]] && bindir="/bin"
+    [[ "${cntr:4:1}" == "1" ]] && sbindir="/sbin"
 done
 if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
-whereispath="${whereispath#*: }";whereispath="${whereispath%% *}"
+whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
 awkpath=$($whereispath $binaryflag awk) # some occurances removed due to inconsistencies with macs
-awkpath="${awkpath#*: }";awkpath="${awkpath%% *}"
+awkpath="${awkpath#*:}";awkpath="${awkpath# }";awkpath="${awkpath%% *}"
 pythonpath=$($whereispath $binaryflag python)
-pythonpath="${pythonpath#*: }";pythonpath="${pythonpath%% *}"
+pythonpath="${pythonpath#*:}";pythonpath="${pythonpath# }";pythonpath="${pythonpath%% *}"
 greppath=$($whereispath $binaryflag grep)
-greppath="${greppath#*: }";greppath="${greppath%% *}"
+greppath="${greppath#*:}";greppath="${greppath# }";greppath="${greppath%% *}"
 ifconfigpath=$($whereispath $binaryflag ifconfig)
-ifconfigpath="${ifconfigpath#*: }";ifconfigpath="${ifconfigpath%% *}"
+ifconfigpath="${ifconfigpath#*:}";ifconfigpath="${ifconfigpath# }";ifconfigpath="${ifconfigpath%% *}"
 eval "$pythonpath -c \"import platform;print(platform.linux_distribution()[0])\" &> /dev/null > \"distributionby.${0#*/}\"" || eval "echo -e \"Functionality may be limited due to inability to determine distribution type\\n...press a key to continue...\";read -n1 -r" || eval "echo $OSTYPE > \"distributionby.${0#*/}\""
 eval "$ifconfigpath -a|$awkpath -F'^ ' '{print \$1}'|$awkpath '{print \$1}'|$greppath -vw lo|xargs" > "interfacesby.${0#*/}"
 # echo "whereis path=$whereispath, awk path=$awkpath, python path=$pythonpath, grep path=$greppath, ifconfig path=$ifconfigpath";exit
@@ -205,8 +208,8 @@ until ! [ -z "$answer" ];do
     echo -e "$startscreen"
     while IFS= read -r -s -n1 char;do [[ -z "$char" ]] && break
         [[ "$answer$char" == "?" ]] && break
-        if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape has been detected
-            read -r -s -t 1 -n2 # do nothing with extended key, timeout if real escape
+        if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape or extended key has been detected
+            read -r -s -t 1 -n2 # read & discard 2nd extended key field, timeout if real escape
         elif [ "${answer%$char*}" == "$answer" ] && [[ "$char" =~ [frdpFRDP] ]];then
             [[ "$char" =~ [FRDP] ]] && char="${char,}"
             printf "$char"
@@ -216,13 +219,13 @@ until ! [ -z "$answer" ];do
             answer="$answer$char "
         else
             [[ "$(printf "%d" "'$char")" == "127" ]] && ! [[ -z "$answer" ]] && answer="${answer:0: -1}" # handles the backspace character
-            printf "\r$answer    \r$answer" # needed when several keys are pressed simultaneously b/c only first gets silented
+            printf "\r$answer    \r$answer" # needed b/c when several keys are pressed simultaneously only first gets silented
         fi
     done
     if [ -z "$answer$char" ];then
         exit
     elif ! [[ "${answer##*\?}" == "$answer" ]] || [[ "$answer$char" == "?" ]];then
-        clear;printf "Selections were: $answer$char";echo -e "  Since info is requested, no actions are accepted."
+        clear;printf "Selections: $answer$char";echo -e "  Since info is selected, no changes are to be made"
         [[ "$answer$char" == "?" ]] && (echo -e "$ghscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         ! [[ "${answer%f*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$fwscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         ! [[ "${answer%r*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$rcscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
@@ -230,20 +233,48 @@ until ! [ -z "$answer" ];do
         ! [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         answer=""
     else
+        aptitudepath="$($whereispath $binaryflag apt-get)";aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
+        inotifypath="$($whereispath $binaryflag inotifywait)";inotifypath="${inotifypath#*:}";inotifypath="${inotifypath## }";inotifypath="${inotifypath%% *}"
+        iptablespath="$($whereispath $binaryflag iptables)";iptablespath="${iptablespath#*:}";iptablespath="${iptablespath## }";iptablespath="${iptablespath%% *}"
+        netfperspath="$($whereispath $binaryflag netfilter-persistent)";netfperspath="${netfperspath#*:}";netfperspath="${netfperspath## }";netfperspath="${netfperspath%% *}"
+        stdbufpath="$($whereispath $binaryflag stdbuf)";stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath## }";stdbufpath="${stdbufpath%% *}"
+        mailpath="$($whereispath $binaryflag mail)";mailpath="${mailpath#*:}";mailpath="${mailpath## }"
+        if [ -z "$mailpath" ];then
+               mailpath=" $($whereispath $binaryflag sendmail)"
+               mailpath="${mailpath#*:}"
+        fi
+        mailpath="${mailpath## }";mailpath="${mailpath%% *}"
+        iptablesnotinstalled="\niptables is not installed but is necessary.  "
+        [[ -z "$aptitudepath" ]] && iptablesnotinstalled+="This helper script\
+\\nis not sophisticated enough to install on any systems not using aptitude"\
+            || iptablesnotinstalled+="Install now?"
+        echo"";echo "";echo "You selected "
         ! [[ "${answer%f*}" == "$answer" ]] && (
-            echo -e "\nYou did select firewalling"
+            echo "firewalling"
         )
         ! [[ "${answer%r*}" == "$answer" ]] && (
-            echo -e "\nYou did select remote controlling"
+            echo "remote controlling"
         )
         ! [[ "${answer%d*}" == "$answer" ]] && (
-            echo -e "\nYou did select dynamic address change notifying"
+            echo "dynamic address change notifying"
         )
         ! [[ "${answer%p*}" == "$answer" ]] && (
-            echo -e "\nYou did select port knocking"
+            echo "port knocking"
+        )
+        echo ""
+        ! [[ "${answer%f*}" == "$answer" ]] && (
+            if [[ -z "$iptablespath" ]];then
+                 echo -e "$iptablesnotinstalled"
+            fi
+        )
+        ! [[ "${answer%r*}" == "$answer" ]] && (
+:
+        )
+        ! [[ "${answer%d*}" == "$answer" ]] && (
+:
+        )
+        ! [[ "${answer%p*}" == "$answer" ]] && (
+:
         )
     fi
 done
-
-
-
