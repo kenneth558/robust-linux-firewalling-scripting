@@ -1,10 +1,10 @@
 #! /bin/bash
 echo "Sorry, still under development ... press a key to continue"
 read -n1 -r
-#  Beginning of copyright message
 if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script won't be able to do anything except\
 \\ndisplay menus.  No changes can be made to this computer unless you re-launch\
 \\nthis script as root.  Press a key to acknowledge...\n";read -n1 -r;fi
+#  Beginning of copyright message
 echo -e "\nCopyright 2016 - Kenneth L. Anderson MCSE, RDH, BGS, BT"\
      "\n\nThis work of authorship is made available to you under only one out of the"\
      "\nfollowing two arrangements.  In both arrangements, this copyright message must"\
