@@ -242,10 +242,10 @@ until ! [ -z "$answer" ];do
     elif ! [[ "${answer##*\?}" == "$answer" ]] || [[ "$answer$char" == "?" ]];then
         clear;printf "Selections: $answer$char";echo -e "  Since info is selected, no changes are to be made"
         [[ "$answer$char" == "?" ]] && (echo -e "$ghscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        ! [[ "${answer%f*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$fwscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        ! [[ "${answer%r*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$rcscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        ! [[ "${answer%d*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$dascreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        ! [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        [[ "${answer%f*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$fwscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        [[ "${answer%r*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$rcscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        [[ "${answer%d*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$dascreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         answer=""
     else
       until [ "$goahead" == "true" ];do
