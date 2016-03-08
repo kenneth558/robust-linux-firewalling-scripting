@@ -252,7 +252,7 @@ until ! [ -z "$answer" ];do
         rhel=$(chkconfig --list 2> /dev/null | grep iptables)
 #       echo "$rhel";exit #DNF, zypper, yum
         installers=(apt-get install dnf install yum install zypper install emerge "" pacman -S pkg install pkg_add "" xbps-install -Sy brew install port install)
-        for installer in {0..11};do
+        for installer in {0..10};do
 #              echo "${installers[$(($installer * 2))]} ${installers[$(($installer * 2 + 1))]}"
               installerpath=$($whereispath $binaryflag ${installers[$(($installer * 2))]});installerpath="${installerpath#*:}";installerpath="${installerpath# }";installerpath="${installerpath%% *}"
               [[ -z "$installerpath" ]] && continue
