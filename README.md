@@ -1,4 +1,4 @@
-Linux iptables plus scripting firewall  "NOT COMPATIBLE WITH BSD SYSTEMS"
+Linux iptables plus scripting firewall  "NOT COMPATIBLE WITH BSD NOR MAC SYSTEMS"
 
 BULLET-PROOF YOUR “OWNER-ACCESS-ONLY” LINUX SERVER FROM HACKERS WITH IPTABLES AND ROBUST SHELL SCRIPTING.
 
@@ -15,7 +15,7 @@ All this PLUS the simplicity and robustness inherent in a bare iptables and scri
 
 INTENDED AUDIENCE
 
- -- Non-BSD LINUX server Command Line Interface (CLI) users connected with IPv4 (IPv6 maybe later).  IPv6 access INTO your system will always work fine because the IPv6 address will get converted into IPv4 before arrival. This setup can co-exist with your favorite Linux GUI and will also run on Linux workstation.   NOT COMPATIBLE WITH BSD SYSTEMS
+ -- Non-BSD LINUX server Command Line Interface (CLI) users connected with IPv4 (IPv6 maybe later).  IPv6 access INTO your system will always work fine because the IPv6 address will get converted into IPv4 before arrival. This setup can co-exist with your favorite Linux GUI and will also run on Linux workstation.   NOT COMPATIBLE WITH BSD NOR MAC SYSTEMS
 
  -- Plus anyone who doesn't even care about the firewalling aspect but just wants the ability to email commands to their Linux-based automation or other purpose server.  Examine the file "email_fetch_parse" to see the default set of keywords and what actions each keyword will perform.  Some examples from that file are: "allow (IP address)" to whitelist a specific IP address, "end blacklist (IP address)" to remove from blacklist a specific IP address, "report" to have the tail of /var/log/kern.log emailed to you, "log" to insert an iptables rule that starts logging every IP packet that makes it down in the iptables INPUT chain ruleset to the rule that sends it to s_privateIPs chain (for if ever the default level of logging didn't log your first attempt), "undo logging" to undo that high level of logging, and a few more.  Make up more for your own use or for automation via usb (echo someword > /dev/[automation's usb channel]).
 
