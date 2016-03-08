@@ -25,8 +25,8 @@ headpath="$($whereispath $binaryflag head)"
 headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
 min_bash_version_tested="4.3.11";! [[ "$($sortpath <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|$headpath -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
 #  though some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
-if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin ]];then echo -e "This firewalling solution does not accommodate Mac nor BSD: BSD and"\
-"\niptables aren't compatible with each other, and Mac doesn't use crontab.";exit;fi
+if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin ]];then echo -e "This firewalling solution does not accommodate Mac nor BSD due to"\
+"\niptables and crontab dysfunction.";exit;fi
 if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
  won't be able to do anything except\
 \\ndisplay menus.  No control of this computer can be made by this script unless\
@@ -242,10 +242,10 @@ until ! [ -z "$answer" ];do
     elif ! [[ "${answer##*\?}" == "$answer" ]] || [[ "$answer$char" == "?" ]];then
         clear;printf "Selections: $answer$char";echo -e "  Since info is selected, no changes are to be made"
         [[ "$answer$char" == "?" ]] && (echo -e "$ghscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        [[ "${answer%f*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$fwscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        [[ "${answer%r*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$rcscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        [[ "${answer%d*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$dascreen";read -n1 -r -p "                         Press a key to continue...";echo "")
-        [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        ! [[ "${answer%f*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$fwscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        ! [[ "${answer%r*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$rcscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        ! [[ "${answer%d*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$dascreen";read -n1 -r -p "                         Press a key to continue...";echo "")
+        ! [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         answer=""
     else
       until [ "$goahead" == "true" ];do
@@ -306,15 +306,15 @@ until ! [ -z "$answer" ];do
         fi
         notinstalled="$(echo -e "$notinstalled"|$sortpath|$uniqpath)"
 #        echo "$notinstalled";exit
-        if ! [[ -z "$notinstalled" ]] && [[ -z "$installerpath" ]] && [[ -z "$rhel" ]] && ! [[ "$ackd" == "true" ]];then
+        if ! [[ -z "$notinstalled" ]] && ! [[ -z "$installerpath" ]] && ! [[ "$ackd" == "true" ]];then
              echo -e "\n\n                  UNABLE TO INSTALL ANY PROGRAMS ON YOUR SYSTEM\
-\\nThis helper script version is not advanced enough to install needed programs on\
-\\nsystems such as yours that don't use apt-get to install programs.  For this\
-\\ninstall script to serve its purpose for you, you'll need to install all\
+\\n\\nThis helper script version is not advanced enough to install needed programs on\
+\\nsystems such as yours that don't use a common installer to install programs.\
+\\nFor this install script to serve its purpose for you, you'll need to install all\
 \\nnecessary programs yourself before anything referenced hereafter can succeed.\
 \\nConsider yourself lucky if this script does anything at all for you beyond this\
 \\npoint, but do understand that the programs most certainly won't get installed.\
-\\nThe necessary programs that won't get installed until you install them are:\
+\\n\\nThe necessary programs that won't get installed until you install them are:\
 \\n$notinstalled\
 \\n\\nYou may install them in another terminal and resume here, or press Ctrl-c to\
 \\nterminate here, or press any other key to proceed as-is\
