@@ -1,6 +1,33 @@
 #! /bin/bash
 echo "Sorry, still under development ... press a key to continue"
 read -n1 -r
+usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
+D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
+until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[ ++counter -eq 64 ]] || [[ "$($whereispath $binaryflag whereis &> /dev/null;echo $?)" == "0" ]];do
+    ! [[ -z "$binaryflag" ]] && binaryflag="" && continue
+    binaryflag="-b"
+    dirsign="/"
+    usrdir="";localdir="";sharedir="";bindir="";sbindir=""
+    cntr="${D2b[counter]}"
+    [[ "${cntr:0:1}" == "1" ]] && usrdir="/usr"
+    [[ "${cntr:1:1}" == "1" ]] && localdir="/local"
+    [[ "${cntr:2:1}" == "1" ]] && sharedir="/share"
+    [[ "${cntr:3:1}" == "1" ]] && bindir="/bin"
+    [[ "${cntr:4:1}" == "1" ]] && sbindir="/sbin"
+done
+if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
+whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
+unamepath=
+unamepath="$($whereispath $binaryflag uname)"
+unamepath="${unamepath#*:}";unamepath="${unamepath# }";unamepath="${unamepath%% *}"
+sortpath="$($whereispath $binaryflag sort)"
+sortpath="${sortpath#*:}";sortpath="${sortpath# }";sortpath="${sortpath%% *}"
+headpath="$($whereispath $binaryflag head)"
+headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
+min_bash_version_tested="4.3.11";! [[ "$($sortpath <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|$headpath -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
+#  though some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
+if [[ "$($unamepath)" =~ BSD ]];then echo -e "This firewalling solution does not accommodate any BSD system due to BSD and"\
+"\niptables not being compatible with each other.  Sorry...";exit;fi
 if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
  won't be able to do anything except\
 \\ndisplay menus.  No control of this computer can be made by this script unless\
@@ -24,7 +51,7 @@ read -n1 -r
 #    Arrangement for your freedom from copyright display obligation: Prior to
 #  distribution, email me the author: kenlovesjesus at gmail dot com to arrange USD payment.
 #  You'll insert name and details of party responsible for making the payment to the
-#  author into comments in the script's source code.  I, the author, will only give
+#  author into comments in the script's sourcecode.  I, the author, will only give
 #  you permission to free yourself from copyright display obligation in writing addressed
 #  directly to the party making payment to me after you have made contact with me.
 #  End of copyright message
@@ -61,24 +88,6 @@ read -n1 -r
 #
 #  accommodate reconfiguration of already installed system
 #
-min_bash_version_tested="4.3.11";! [[ "$(sort <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|head -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
-#  though some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
-usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
-D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
-until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[ ++counter -eq 64 ]] || [[ "$($whereispath $binaryflag whereis &> /dev/null;echo $?)" == "0" ]];do
-    ! [[ -z "$binaryflag" ]] && binaryflag="" && continue
-    binaryflag="-b"
-    dirsign="/"
-    usrdir="";localdir="";sharedir="";bindir="";sbindir=""
-    cntr="${D2b[counter]}"
-    [[ "${cntr:0:1}" == "1" ]] && usrdir="/usr"
-    [[ "${cntr:1:1}" == "1" ]] && localdir="/local"
-    [[ "${cntr:2:1}" == "1" ]] && sharedir="/share"
-    [[ "${cntr:3:1}" == "1" ]] && bindir="/bin"
-    [[ "${cntr:4:1}" == "1" ]] && sbindir="/sbin"
-done
-if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
-whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
 awkpath="$($whereispath $binaryflag awk)" # some occurances removed due to inconsistencies with macs
 awkpath="${awkpath#*:}";awkpath="${awkpath# }";awkpath="${awkpath%% *}"
 pythonpath="$($whereispath $binaryflag python)"
@@ -87,14 +96,12 @@ greppath="$($whereispath $binaryflag grep)"
 greppath="${greppath#*:}";greppath="${greppath# }";greppath="${greppath%% *}"
 ifconfigpath="$($whereispath $binaryflag ifconfig)"
 ifconfigpath="${ifconfigpath#*:}";ifconfigpath="${ifconfigpath# }";ifconfigpath="${ifconfigpath%% *}"
-sortpath="$($whereispath $binaryflag sort)"
-sortpath="${sortpath#*:}";sortpath="${sortpath# }";sortpath="${sortpath%% *}"
-headpath="$($whereispath $binaryflag head)"
-headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
 uniqpath="$($whereispath $binaryflag uniq)"
 uniqpath="${uniqpath#*:}";uniqpath="${uniqpath# }";uniqpath="${uniqpath%% *}"
 findpath="$($whereispath $binaryflag find)"
 findpath="${findpath#*:}";findpath="${findpath# }";findpath="${findpath%% *}";
+rhel="$($whereispath $binaryflag chkconfig)"
+rhel="${rhel#*:}";rhel="${rhel# }";rhel="${rhel%% *}"
 eval "$pythonpath -c \"import platform;print(platform.linux_distribution()[0])\" &> /dev/null > \"distributionby.${0#*/}\"" || eval "echo -e \"Functionality may be limited due to inability to determine distribution type\\n...press a key to continue...\";read -n1 -r" || eval "echo $OSTYPE > \"distributionby.${0#*/}\""
 eval "$ifconfigpath -a|$awkpath -F'^ ' '{print \$1}'|$awkpath '{print \$1}'|$greppath -vw lo|xargs" > "interfacesby.${0#*/}"
 # echo "Script-required items: whereis path=$whereispath, awk path=$awkpath, python path=$pythonpath, grep path=$greppath, ifconfig path=$ifconfigpath, uniq path=$uniqpath, sort path=$sortpath, head path=$headpath";exit
@@ -243,7 +250,17 @@ until ! [ -z "$answer" ];do
         answer=""
     else
       until [ "$goahead" == "true" ];do
-        aptitudepath=$($whereispath $binaryflag apt-get);aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
+        rhel=$(chkconfig --list 2> /dev/null | grep iptables)
+#       echo "$rhel";exit #DNF, zypper, yum
+        installers=(apt-get install dnf install yum install zypper install emerge "" pacman -S pkg install pkg_add "" xbps-install -Sy brew install port install)
+        for aptname in "${installers[@]}";do
+              aptitudepath=$($whereispath $binaryflag $aptname);aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
+              [[ -z "$aptitudepath" ]] && continue
+              case "$aptname" in
+                  $installers[0])
+
+              esac
+        done
         inotifypath=$($whereispath $binaryflag inotifywait);inotifypath="${inotifypath#*:}";inotifypath="${inotifypath## }";inotifypath="${inotifypath%% *}"
         iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath## }";iptablespath="${iptablespath%% *}"
         iptabperspath=$($findpath / -maxdepth 3 -name iptables-persistent 2> /dev/null)
@@ -291,7 +308,7 @@ until ! [ -z "$answer" ];do
         fi
         notinstalled="$(echo -e "$notinstalled"|$sortpath|$uniqpath)"
 #        echo "$notinstalled";exit
-        if ! [[ -z "$notinstalled" ]] && [[ -z "$aptitudepath" ]] && ! [[ "$ackd" == "true" ]];then
+        if ! [[ -z "$notinstalled" ]] && [[ -z "$aptitudepath" ]] && [[ -z "$rhel" ]] && ! [[ "$ackd" == "true" ]];then
              echo -e "\n\n                  UNABLE TO INSTALL ANY PROGRAMS ON YOUR SYSTEM\
 \\nThis helper script version is not advanced enough to install needed programs on\
 \\nsystems such as yours that don't use apt-get to install programs.  For this\
@@ -335,6 +352,6 @@ until ! [ -z "$answer" ];do
             :
         fi
 #        echo "final answer=$answer";exit
-        echo -e "Not installed=$notinstalled\niptables path=$iptablespath, iptables-persistent path=$iptabperspath, stdbuf path=$stdbufpath, mail path=$mailpath, inotifywait path=$inotifypath, aptitude path=$aptitudepath, crontab path=$crontabpath"
+        echo -e "Not installed=$notinstalled\niptables path=$iptablespath, iptables-persistent path=$iptabperspath, stdbuf path=$stdbufpath, mail path=$mailpath, inotifywait path=$inotifypath, aptitude path=$aptitudepath, crontab path=$crontabpath, rhel=$rhel"
     fi
 done
