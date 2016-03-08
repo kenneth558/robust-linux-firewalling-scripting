@@ -25,8 +25,8 @@ headpath="$($whereispath $binaryflag head)"
 headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
 min_bash_version_tested="4.3.11";! [[ "$($sortpath <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|$headpath -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
 #  though some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
-if [[ "$($unamepath)" =~ BSD ]];then echo -e "This firewalling solution does not accommodate any BSD system due to BSD and"\
-"\niptables not being compatible with each other.  Sorry...";exit;fi
+if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin]];then echo -e "This firewalling solution does not accommodate Mac nor BSD: BSD and"\
+"\niptables aren't compatible with each other, and Mac doesn't use crontab.";exit;fi
 if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
  won't be able to do anything except\
 \\ndisplay menus.  No control of this computer can be made by this script unless\
@@ -252,13 +252,12 @@ until ! [ -z "$answer" ];do
         rhel=$(chkconfig --list 2> /dev/null | grep iptables)
 #       echo "$rhel";exit #DNF, zypper, yum
         installers=(apt-get install dnf install yum install zypper install emerge "" pacman -S pkg install pkg_add "" xbps-install -Sy brew install port install)
-        for aptname in "${installers[@]}";do
-              aptitudepath=$($whereispath $binaryflag $aptname);aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
-              [[ -z "$aptitudepath" ]] && continue
-              case "$aptname" in
-                  $installers[0])
-
-              esac
+        for installer in {0..11};do
+#              echo "${installers[$(($installer * 2))]} ${installers[$(($installer * 2 + 1))]}"
+              installerpath=$($whereispath $binaryflag ${installers[$(($installer * 2))]});installerpath="${installerpath#*:}";installerpath="${installerpath# }";installerpath="${installerpath%% *}"
+              [[ -z "$installerpath" ]] && continue
+              installerpath+="  ${installers[$(($installer * 2 + 1))]}"
+              break
         done
         inotifypath=$($whereispath $binaryflag inotifywait);inotifypath="${inotifypath#*:}";inotifypath="${inotifypath## }";inotifypath="${inotifypath%% *}"
         iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath## }";iptablespath="${iptablespath%% *}"
@@ -277,37 +276,37 @@ until ! [ -z "$answer" ];do
             [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
             [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
             [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
-            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
             [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
-            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         if ! [[ "${answer%r*}" == "$answer" ]];then
             [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
             [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
             [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
-            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
             [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
-            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         if ! [[ "${answer%d*}" == "$answer" ]];then
             [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
             [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
             [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
-            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
             [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
-            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         if ! [[ "${answer%p*}" == "$answer" ]];then
-            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
-            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
-            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
-            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
-            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
-            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+            ! [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            ! [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            ! [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            ! [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
+            ! [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            ! [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         notinstalled="$(echo -e "$notinstalled"|$sortpath|$uniqpath)"
 #        echo "$notinstalled";exit
-        if ! [[ -z "$notinstalled" ]] && [[ -z "$aptitudepath" ]] && [[ -z "$rhel" ]] && ! [[ "$ackd" == "true" ]];then
+        if ! [[ -z "$notinstalled" ]] && [[ -z "$installerpath" ]] && [[ -z "$rhel" ]] && ! [[ "$ackd" == "true" ]];then
              echo -e "\n\n                  UNABLE TO INSTALL ANY PROGRAMS ON YOUR SYSTEM\
 \\nThis helper script version is not advanced enough to install needed programs on\
 \\nsystems such as yours that don't use apt-get to install programs.  For this\
@@ -326,12 +325,12 @@ until ! [ -z "$answer" ];do
         fi
       done
         clear
-      if ! [ -z "$aptitudepath" ] && ! [ -z "$notinstalled" ];then # install what is needed
+      if ! [ -z "$installerpath" ] && ! [ -z "$notinstalled" ];then # install what is needed
 #                  notinstalled="$(echo -e "$notinstalled"|xargs)"
                   echo -e "Installation of\n$notinstalled\\n\\nwill begin after your keypress...";read -n1 -r
-                  eval "$aptitudepath update 2> /dev/null"
+#                   eval "$installerpath update 2> /dev/null"
                   notinstalled="$(echo -e "$notinstalled"|xargs)"
-                  eval "$aptitudepath -y install $notinstalled"
+                  eval "$installerpath $notinstalled"
       fi
 #        echo "You selected "
         if ! [[ "${answer%f*}" == "$answer" ]];then
@@ -351,6 +350,6 @@ until ! [ -z "$answer" ];do
             :
         fi
 #        echo "final answer=$answer";exit
-        echo -e "Not installed=$notinstalled\niptables path=$iptablespath, iptables-persistent path=$iptabperspath, stdbuf path=$stdbufpath, mail path=$mailpath, inotifywait path=$inotifypath, aptitude path=$aptitudepath, crontab path=$crontabpath, rhel=$rhel"
+        echo -e "Not installed=$notinstalled\niptables path=$iptablespath, iptables-persistent path=$iptabperspath, stdbuf path=$stdbufpath, mail path=$mailpath, inotifywait path=$inotifypath, aptitude path=$installerpath, crontab path=$crontabpath, rhel=$rhel"
     fi
 done
