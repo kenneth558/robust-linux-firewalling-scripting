@@ -17,7 +17,6 @@ until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[
 done
 if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
 whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
-unamepath=
 unamepath="$($whereispath $binaryflag uname)"
 unamepath="${unamepath#*:}";unamepath="${unamepath# }";unamepath="${unamepath%% *}"
 sortpath="$($whereispath $binaryflag sort)"
