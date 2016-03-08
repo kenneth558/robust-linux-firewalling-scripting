@@ -297,12 +297,12 @@ until ! [ -z "$answer" ];do
             [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         if ! [[ "${answer%p*}" == "$answer" ]];then
-            ! [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
-            ! [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
-            ! [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
-            ! [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
-            ! [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
-            ! [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
+            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="coreutils\\n"
+            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="cronie\\nbcron\\n"
         fi
         notinstalled="$(echo -e "$notinstalled"|$sortpath|$uniqpath)"
 #        echo "$notinstalled";exit
