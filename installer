@@ -1,9 +1,10 @@
 #! /bin/bash
 echo "Sorry, still under development ... press a key to continue"
 read -n1 -r
-if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script won't be able to do anything except\
-\\ndisplay menus.  No changes can be made to this computer unless you re-launch\
-\\nthis script as root.  Press a key to acknowledge...\n";read -n1 -r;fi
+if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
+ won't be able to do anything except\
+\\ndisplay menus.  No control of this computer can be made by this script unless\
+\\nre-launched by root.  Press a key to acknowledge, Ctrl-c to abort\n";read -n1 -r;fi
 #  Beginning of copyright message
 echo -e "\nCopyright 2016 - Kenneth L. Anderson MCSE, RDH, BGS, BT"\
      "\n\nThis work of authorship is made available to you under only one out of the"\
@@ -12,12 +13,12 @@ echo -e "\nCopyright 2016 - Kenneth L. Anderson MCSE, RDH, BGS, BT"\
      "\n\n1.  Arrangement for your freedom from monetary obligation to the author:"\
      "\n - This copyright message must continue to be displayed at launch time"\
      "\n - This copyright message includes the statement"\
-     "\n\n\"       Jesus Christ is Lord of all  ... press a key to acknowledge\"\n"\
-     "\ndisplayed on its own line with blank lines adjacently both above and below said"\
-     "\nstatement and rendered statically without attempt made to render said statement"\
-     "\ntransiently."\
-     "\n\n2.  Arrangement for your freedom from copyright display obligation: See the"\
-     "\ncomments within the source code of this script"
+     "\n\n\"       Jesus Christ is Lord of all  ... press a key to acknowledge\""\
+     "\n\ndisplayed on its own line with blank lines adjacently both above and below"\
+     "\nsaid nstatement and rendered statically without attempt made to render said"\
+     "\nstatement transiently."\
+     "\n\n2.  Arrangement for your freedom from copyright display obligation, or to"\
+     "\ncontribute, see the comments within the source code of this script"
 echo -e "\n\n       Jesus Christ is Lord of all  ... press a key to acknowledge\n"
 read -n1 -r
 #    Arrangement for your freedom from copyright display obligation: Prior to
@@ -78,17 +79,25 @@ until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[
 done
 if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
 whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
-awkpath=$($whereispath $binaryflag awk) # some occurances removed due to inconsistencies with macs
+awkpath="$($whereispath $binaryflag awk)" # some occurances removed due to inconsistencies with macs
 awkpath="${awkpath#*:}";awkpath="${awkpath# }";awkpath="${awkpath%% *}"
-pythonpath=$($whereispath $binaryflag python)
+pythonpath="$($whereispath $binaryflag python)"
 pythonpath="${pythonpath#*:}";pythonpath="${pythonpath# }";pythonpath="${pythonpath%% *}"
-greppath=$($whereispath $binaryflag grep)
+greppath="$($whereispath $binaryflag grep)"
 greppath="${greppath#*:}";greppath="${greppath# }";greppath="${greppath%% *}"
-ifconfigpath=$($whereispath $binaryflag ifconfig)
+ifconfigpath="$($whereispath $binaryflag ifconfig)"
 ifconfigpath="${ifconfigpath#*:}";ifconfigpath="${ifconfigpath# }";ifconfigpath="${ifconfigpath%% *}"
+sortpath="$($whereispath $binaryflag sort)"
+sortpath="${sortpath#*:}";sortpath="${sortpath# }";sortpath="${sortpath%% *}"
+headpath="$($whereispath $binaryflag head)"
+headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
+uniqpath="$($whereispath $binaryflag uniq)"
+uniqpath="${uniqpath#*:}";uniqpath="${uniqpath# }";uniqpath="${uniqpath%% *}"
+findpath="$($whereispath $binaryflag find)"
+findpath="${findpath#*:}";findpath="${findpath# }";findpath="${findpath%% *}";
 eval "$pythonpath -c \"import platform;print(platform.linux_distribution()[0])\" &> /dev/null > \"distributionby.${0#*/}\"" || eval "echo -e \"Functionality may be limited due to inability to determine distribution type\\n...press a key to continue...\";read -n1 -r" || eval "echo $OSTYPE > \"distributionby.${0#*/}\""
 eval "$ifconfigpath -a|$awkpath -F'^ ' '{print \$1}'|$awkpath '{print \$1}'|$greppath -vw lo|xargs" > "interfacesby.${0#*/}"
-# echo "whereis path=$whereispath, awk path=$awkpath, python path=$pythonpath, grep path=$greppath, ifconfig path=$ifconfigpath";exit
+# echo "Script-required items: whereis path=$whereispath, awk path=$awkpath, python path=$pythonpath, grep path=$greppath, ifconfig path=$ifconfigpath, uniq path=$uniqpath, sort path=$sortpath, head path=$headpath";exit
 #
 # Introduction and what we'll do
 
@@ -102,7 +111,7 @@ startscreen="\\n\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`
 \\n\\n
 \\nTyping the letters f, r, d, p, optionally followed by a question mark, or just\
 \\nplain ? with no letters, select all of the five services listed above that you\
-\\nwant, then press ENTER: "
+\\nwant, then press ENTER: (or Ctrl-c at any time to terminate script)"
 ghscreen="\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`Information Screen\
 \\n                              HELPER SCRIPT OVERVIEW\
 \\nThis set of Linux scripts can install several capabilities useful for\
@@ -233,48 +242,99 @@ until ! [ -z "$answer" ];do
         ! [[ "${answer%p*}" == "$answer" ]] || [[ "$answer$char" == "?" ]] && (echo -e "$pkscreen";read -n1 -r -p "                         Press a key to continue...";echo "")
         answer=""
     else
-        aptitudepath="$($whereispath $binaryflag apt-get)";aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
-        inotifypath="$($whereispath $binaryflag inotifywait)";inotifypath="${inotifypath#*:}";inotifypath="${inotifypath## }";inotifypath="${inotifypath%% *}"
-        iptablespath="$($whereispath $binaryflag iptables)";iptablespath="${iptablespath#*:}";iptablespath="${iptablespath## }";iptablespath="${iptablespath%% *}"
-        netfperspath="$($whereispath $binaryflag netfilter-persistent)";netfperspath="${netfperspath#*:}";netfperspath="${netfperspath## }";netfperspath="${netfperspath%% *}"
-        stdbufpath="$($whereispath $binaryflag stdbuf)";stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath## }";stdbufpath="${stdbufpath%% *}"
-        mailpath="$($whereispath $binaryflag mail)";mailpath="${mailpath#*:}";mailpath="${mailpath## }"
+      until [ "$goahead" == "true" ];do
+        aptitudepath=$($whereispath $binaryflag apt-get);aptitudepath="${aptitudepath#*:}";aptitudepath="${aptitudepath# }";aptitudepath="${aptitudepath%% *}"
+        inotifypath=$($whereispath $binaryflag inotifywait);inotifypath="${inotifypath#*:}";inotifypath="${inotifypath## }";inotifypath="${inotifypath%% *}"
+        iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath## }";iptablespath="${iptablespath%% *}"
+        iptabperspath=$($findpath / -maxdepth 3 -name iptables-persistent 2> /dev/null)
+        stdbufpath=$($whereispath $binaryflag stdbuf);stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath## }";stdbufpath="${stdbufpath%% *}"
+        crontabpath=$($whereispath $binaryflag crontab);crontabpath="${crontabpath#*:}";crontabpath="${crontabpath# }";crontabpath="${crontabpath%% *}"
+        mailpath=$($whereispath $binaryflag mail);mailpath="${mailpath#*:}";mailpath="${mailpath## }";mailpath="${mailpath%% *}"
         if [ -z "$mailpath" ];then
-               mailpath=" $($whereispath $binaryflag sendmail)"
-               mailpath="${mailpath#*:}"
+            mailpath=" $($whereispath $binaryflag sendmail)"
+            mailpath="${mailpath#*:}"
         fi
         mailpath="${mailpath## }";mailpath="${mailpath%% *}"
-        iptablesnotinstalled="\niptables is not installed but is necessary.  "
-        [[ -z "$aptitudepath" ]] && iptablesnotinstalled+="This helper script\
-\\nis not sophisticated enough to install on any systems not using aptitude"\
-            || iptablesnotinstalled+="Install now?"
-        echo"";echo "";echo "You selected "
-        ! [[ "${answer%f*}" == "$answer" ]] && (
-            echo "firewalling"
-        )
-        ! [[ "${answer%r*}" == "$answer" ]] && (
-            echo "remote controlling"
-        )
-        ! [[ "${answer%d*}" == "$answer" ]] && (
-            echo "dynamic address change notifying"
-        )
-        ! [[ "${answer%p*}" == "$answer" ]] && (
-            echo "port knocking"
-        )
-        echo ""
-        ! [[ "${answer%f*}" == "$answer" ]] && (
-            if [[ -z "$iptablespath" ]];then
-                 echo -e "$iptablesnotinstalled"
-            fi
-        )
-        ! [[ "${answer%r*}" == "$answer" ]] && (
-:
-        )
-        ! [[ "${answer%d*}" == "$answer" ]] && (
-:
-        )
-        ! [[ "${answer%p*}" == "$answer" ]] && (
-:
-        )
+
+        notinstalled=""
+        if ! [[ "${answer%f*}" == "$answer" ]];then
+            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+        fi
+        if ! [[ "${answer%r*}" == "$answer" ]];then
+            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+        fi
+        if ! [[ "${answer%d*}" == "$answer" ]];then
+            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+        fi
+        if ! [[ "${answer%p*}" == "$answer" ]];then
+            [[ -z "$inotifypath" ]] && notinstalled+="inotify-tools\\n"
+            [[ -z "$iptablespath" ]] && notinstalled+="iptables\\n"
+            [[ -z "$iptabperspath" ]] && notinstalled+="iptables-persistent\\n"
+            [[ -z "$stdbufpath" ]] && notinstalled+="stdbuf\\n"
+            [[ -z "$mailpath" ]] && notinstalled+="mailutils\\n"
+            [[ -z "$crontabpath" ]] && notinstalled+="crontab\\n"
+        fi
+        notinstalled="$(echo -e "$notinstalled"|$sortpath|$uniqpath)"
+#        echo "$notinstalled";exit
+        if ! [[ -z "$notinstalled" ]] && [[ -z "$aptitudepath" ]] && ! [[ "$ackd" == "true" ]];then
+             echo -e "\n\n                  UNABLE TO INSTALL ANY PROGRAMS ON YOUR SYSTEM\
+\\nThis helper script version is not advanced enough to install needed programs on\
+\\nsystems such as yours that don't use apt-get to install programs.  For this\
+\\ninstall script to serve its purpose for you, you'll need to install all\
+\\nnecessary programs yourself before anything referenced hereafter can succeed.\
+\\nConsider yourself lucky if this script does anything at all for you beyond this\
+\\npoint, but do understand that the programs most certainly won't get installed.\
+\\nThe necessary programs that won't get installed until you install them are:\
+\\n$notinstalled\
+\\n\\nYou may install them in another terminal and resume here, or press Ctrl-c to\
+\\nterminate here, or press any other key to proceed as-is\
+\\n\\n     Acknowledge by keypress..."
+             read -n1 -r;ackd="true"
+        else
+             goahead="true"
+        fi
+      done
+        clear
+      if ! [ -z "$aptitudepath" ] && ! [ -z "$notinstalled" ];then # install what is needed
+#                  notinstalled="$(echo -e "$notinstalled"|xargs)"
+                  echo -e "Installation of\n$notinstalled\\n\\nwill begin after your keypress...";read -n1 -r
+                  eval "$aptitudepath update 2> /dev/null"
+                  notinstalled="$(echo -e "$notinstalled"|xargs)"
+                  eval "$aptitudepath -y install $notinstalled"
+      fi
+#        echo "You selected "
+        if ! [[ "${answer%f*}" == "$answer" ]];then
+#            echo "firewalling"
+            :
+        fi
+        if ! [[ "${answer%r*}" == "$answer" ]];then
+#            echo "remote controlling"
+            :
+        fi
+        if ! [[ "${answer%d*}" == "$answer" ]];then
+#            echo "dynamic address change notifying"
+            :
+        fi
+        if ! [[ "${answer%p*}" == "$answer" ]];then
+#            echo "port knocking"
+            :
+        fi
+#        echo "final answer=$answer";exit
+        echo -e "Not installed=$notinstalled\niptables path=$iptablespath, iptables-persistent path=$iptabperspath, stdbuf path=$stdbufpath, mail path=$mailpath, inotifywait path=$inotifypath, aptitude path=$aptitudepath, crontab path=$crontabpath"
     fi
 done
