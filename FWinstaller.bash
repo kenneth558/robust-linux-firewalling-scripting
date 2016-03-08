@@ -25,7 +25,7 @@ headpath="$($whereispath $binaryflag head)"
 headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
 min_bash_version_tested="4.3.11";! [[ "$($sortpath <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|$headpath -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
 #  though some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
-if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin]];then echo -e "This firewalling solution does not accommodate Mac nor BSD: BSD and"\
+if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin ]];then echo -e "This firewalling solution does not accommodate Mac nor BSD: BSD and"\
 "\niptables aren't compatible with each other, and Mac doesn't use crontab.";exit;fi
 if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
  won't be able to do anything except\
