@@ -113,7 +113,7 @@ Line wrapping is employed in these pages, so copy/paste transfer will work bette
 
 SHELL=/bin/bash
 
-*/30 * * * * /etc/init.d/netfilter-persistent save >/dev/null 2>&1
+*/30 * * * * /etc/init.d/iptables-persistent save >/dev/null 2>&1
 
 @reboot nice -n19 inotifywait --quiet --monitor --event modify /var/lib/dhcp/dhclient.eth0.leases|while read;do /home/homeowner/newip_no_mysql.sh;done >/dev/null 2>&1
 
@@ -127,7 +127,7 @@ SHELL=/bin/bash
 
 Explaining the crontab entries
 
-Netfilter-persistent: used to best keep iptables rules between reboots of the system.  If this would ever fail to execute, the entire firewall functionality vaporizes permanently into nothingness, which I have had happen on very rare occasion.  Therefore, I strongly recommend you familiarize yourself with the backup aspect of this scripting called “buildiptables”.  It is a script in the home directory which is real-time updated from iptables rules changes.  
+iptables-persistent: used to best keep iptables rules between reboots of the system.  If this would ever fail to execute, the entire firewall functionality vaporizes permanently into nothingness, which I have had happen on very rare occasion.  Therefore, I strongly recommend you familiarize yourself with the backup aspect of this scripting called “buildiptables”.  It is a script in the home directory which is real-time updated from iptables rules changes.  
 
 
 reboot nice -n19 inotifywait...  … /var/lib/dhcp/dhclient.eth0.leases... For dynamic IP systems: Did I promise something for DHCP client systems?  This is one way to “trap” an IP address change of the system.  NOTE: I DON'T FULLY UNDERSTAND IF/HOW/WHEN/WHY ALL THE DIFFERENT ISPs/MODEMS PASS THE NEW IP ADDRESS DIFFERENTLY THROUGH THEIR CABLE MODEMS TO YOUR SYSTEM!  My DOCSIS 3 cable modems pass the routable/public IP address to my systems, but I don't know if that will be the case with everyone or all modem/ISP combinations.  If you really want the feature of being alerted when your system's routable IP address changes but don't have the public IP address coming coming all the way down to your system, you'll probably have to figure out a polling method using “dig +short myip.opendns.com @resolver1.opendns.com” or “echo -en '\x00\x01\x00\x08\xc0\x0c\xee\x42\x7c\x20\x25\xa3\x3f\x0f\xa1\x7f\xfd\x7f\x00\x00\x00\x03\x00\x04\x00\x00\x00\x00' |nc -u -w 2 stun.services.mozilla.com 3478 |dd bs=1 count=4 skip=28 2>/dev/null |hexdump -e '1/1 "%u."' |sed 's/\.$/\n/'” or something.  Maybe your ISP offers static IPs – you could ask about that.  Don't forget to adjust the “eth0” in this line as needed with the name of your ethernet interface that faces the internet.
