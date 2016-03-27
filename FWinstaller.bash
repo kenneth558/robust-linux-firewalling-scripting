@@ -1,6 +1,6 @@
 #! /bin/bash
-echo "Sorry, still under development ... press a key to continue"
-read -n1 -s
+########### echo "Sorry, still under development ... press a key to continue"
+########### read -n1 -s
 usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
 D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
 until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[ ++counter -eq 64 ]] || [[ "$($whereispath $binaryflag whereis &> /dev/null;echo $?)" == "0" ]];do
@@ -582,8 +582,8 @@ echo "crontab set up..."
 # See https://www.linode.com/docs/email/postfix/postfix-smtp-debian7
 line=""
 ############### remove line up to the until statement
-line="--------"
-outemailadd="---------";outemailpw="-------";outemailacct="${outemailadd%@*}";outemailprovider="${outemailadd#*@}";outemaildomain="${outemailprovider%.*}";outtopdomain="${outemailprovider#*.}";outemailsubdomain="smtp";
+line="fdgfhjk@gmail.com"
+outemailadd="ertyuik@cox.net";outemailpw="-------";outemailacct="${outemailadd%@*}";outemailprovider="${outemailadd#*@}";outemaildomain="${outemailprovider%.*}";outtopdomain="${outemailprovider#*.}";outemailsubdomain="smtp";
 while true;do
      clear;echo -e "Three emailing functions need email addresses.  Provide at least one email\
 \naddress now.  The address[es] asked for now is/are the one or more that will\
@@ -593,7 +593,7 @@ while true;do
 \nphone carriers often limit the length of email-to-texting conversion and cut\
 \nshort the longer texts."
      echo -e "\nAddress[es] where to send notifications to:\n"
-     toemailadds="----------";printf "$toemailadds$line"
+     toemailadds="4567899876@text.republicwireless.com\nghjk,kj@walnutel.net\nrtyujkkl@cox.net\n";printf "$toemailadds$line"
      while IFS= read  -s -n1 -r char;do # [[ -z "$char" ]] && break
           if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape or extended key has been detected, single quote important
                      read -r -s -t 1 -n2 # read & discard 2nd extended key field, timeout if real escape
@@ -901,7 +901,7 @@ echo -e "\nFind a different way to get this !!!!!!!!!!!\n"
           }
           install_rc () {
 directoryforscripts="$( cat directoryforscripts )"
-line="timeiselastic@walnutel.net"
+line="k,sjdk,@walnutel.net"
 inemailadd="";inemailacct="${inemailadd%@*}";inemailprovider="${inemailadd#*@}";inemaildomain="${inemailprovider%.*}";intopdomain="${inemailprovider#*.}";inemailsubdomain="pop";
 rm successlogins 2>/dev/null
 clear
@@ -1218,6 +1218,102 @@ EOF
 ) > "$directoryforscripts/email_fetch_parse"
 chmod 700 "$directoryforscripts/email_fetch_parse"
           }
+install_dynIPch () {
+:
+##The following 3 lines are intentionally redundant to allow system admin to change dhcp client package and still get notified of dhcp change
+##
+#/var/lib/dhclient/dhclient-eth0.leases
+#/var/lib/dhcp/dhclient.eth0.leases
+#/var/lib/dhcp3/dhclient.leases
+# "$directoryforscripts/newdynip.sh"
+echo -e "The notification email you'd receive should refer to this computer by what name?"
+pcname=$(while read -e -r -i "$(hostname)" sysname;do if ! [[ -z "$sysname" ]];then echo "$sysname";break;fi;done)
+echo ""
+if [[ "$(dig +short myip.opendns.com @resolver1.opendns.com)" =~ ^((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])$ ]];then 
+     echo -e "To learn any new IP address gotten, this computer will interrogate a public\nservice, \
+default is shown below.  Press enter to keep it; otherwise, change it\nto suit you:"
+else 
+     echo -e "To learn any new IP address gotten, this computer will interrogate a public\nservice, \
+default is shown below, but is NOT WORKING now.  Change it to suit you:"
+fi
+resolver="$(while read -e -i "dig +short myip.opendns.com @resolver1.opendns.com" resolver;do 
+     echo "$resolver";break;
+done)"
+echo -e "In the email that will inform those recipients who you'll specify of the new IP\
+\naddress listed as one or a series of link[s] formatted as any browser would\
+\naccept in the address bar, enter the protocol, subdirectories and options, and\
+\nport that the address will begin and end with, in as many combinations as you'd\
+\nlike displayed in the email.\
+\nExample: Suppose your computer serves two web pages, one as http and the other\
+\nas https, two camera video streams, wifi modem administration, ssh, and a remote\
+\ncontrol channel, so you could want all 7 links sent in the new IP address\
+\nnotification email, along with reminder links of those 7 services with their\
+\ninside (private) IP addresses for access to them when you are home, like this,\
+\nsome port numbers fictitious:\
+\n\nhttp://<new IP address>/sub/dir[s]:80\
+\nhttps://<new IP address>/sub/dir[s]:443\
+\nrtsp://<new IP address>/sub/dir[s] and options:15541\
+\nrtsp://<new IP address>/sub/dir[s] and options:15542\
+\nhttp://<new IP address>/sub/dir[s]:801\
+\nssh homeowner@<new IP address>:122\
+\nxmpp://<new IP address>/sub/dir[s] and options:121\
+\n"
+(cat <<EOF
+#!/bin/bash
+# arg 1 is file name of modified file in same directory as leases
+# verify ending type is lease or leases
+# then parse backwards making sure no private ip range is referenced
+! [[ "\${1##*.}" == "lease" ]] && ! [[ "\${1##*.}" == "leases" ]] && exit
+#site-specific variables:
+webpageprotocol=https
+emailsubjectline="New IP address for $pcname: "
+file_to_store_ip="$directoryforscripts/oldip"
+resolver="dig +short myip.opendns.com @resolver1.opendns.com"
+ip_from_resolver="\$(\$resolver)"
+if [[ \$ip_from_resolver =~ ^((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\$ ]];
+then
+    if ( [ -f \$file_to_store_ip ] );
+    then
+        if [[ \$(< \$file_to_store_ip) =~ ^((1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\\.){3}(1?[0-9]?[0-9]|2[0-4][0-9]|25[0-5])\$ ]] && [[ \$ip_from_resolver == \$(< \$file_to_store_ip) ]];
+        then
+echo "IP address is <\$ip_from_resolver> and not new, old ip = <\$(< \$file_to_store_ip)>"
+            exit
+        fi
+    else
+        : #first run
+    fi
+else
+echo "IP address is <\$ip_from_resolver> and not acceptable"
+    exit
+fi
+echo -e "$webpageprotocol://$ip_from_resolver/zm\
+\nhttp://$ip_from_resolver:9080\
+\nhttp://$ip_from_resolver:8080\
+\nhttp://$ip_from_resolver:7080\
+\nhttp://$ip_from_resolver:6080\
+\nhttp://$ip_from_resolver:5080\
+\nhttp://$ip_from_resolver:4080\
+\nssh homeowner@$ip_from_resolver\
+\nnc -w 1 $ip_from_resolver\
+\n$webpageprotocol://192.168.3.3/zm\
+\nhttp://192.168.3.9:9080\
+\nhttp://192.168.3.8:8080\
+\nhttp://192.168.3.7:7080\
+\nhttp://192.168.3.6:6080\
+\nhttp://192.168.3.5:5080\
+\nhttp://192.168.3.4:4080\
+\nssh homeowner@192.168.3.1\
+\n" | mail -s "$emailsubjectline" $emaildestination
+
+echo \$ip_from_resolver > \$file_to_store_ip
+echo "IP address is <\$ip_from_resolver>"
+EOF
+) > "$directoryforscripts/newdynip.sh"
+
+<<EOF1
+:
+EOF1
+}
 outemail_warnings () {
          echo -e "This installation script is about to make changes to this computer that can\
 \nprofoundly change the way it sends out email.  No accommodation will be given\
@@ -1239,7 +1335,7 @@ end_warnings () {
 \nbetter reason for doing so than that."
 }
        directoryforscripts="${directoryforscripts%%/}"
-        if ! [[ "${answer%f*}" == "$answer" ]];then
+#        if ! [[ "${answer%f*}" == "$answer" ]];then
 #            echo "firewalling"
 # determine usable interfaces, build for eth0 dhcp in, eth1 static out first
 ########### uncomment the next two lines
@@ -1251,15 +1347,20 @@ end_warnings () {
 #             outemail_warnings
 #             echo -e "\nPress a key to acknowledge and continue, Ctrl-c to abort..."
 #             read -n1
-             conf_postfix
-:
-        fi
-        if ! [[ "${answer%r*}" == "$answer" ]];then
-             echo -e "remote controlling"
-             install_rc
-             
+#             conf_postfix
+#:
+#        fi
+#        if ! [[ "${answer%r*}" == "$answer" ]];then
+#             echo -e "remote controlling"
+#             install_rc
+#             
+#        fi
+        if ! [[ "${answer%d*}" == "$answer" ]];then
+             echo -e "dynamic IP change notify"
+#             install_rc
+             install_dynIPch
+
         fi
     fi
 done
 exit
-
