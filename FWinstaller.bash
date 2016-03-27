@@ -1,6 +1,6 @@
 #! /bin/bash
-########### echo "Sorry, still under development ... press a key to continue"
-########### read -n1 -s
+echo "Sorry, still under development ... press a key to continue"
+read -n1 -s
 usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
 D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
 until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[ ++counter -eq 64 ]] || [[ "$($whereispath $binaryflag whereis &> /dev/null;echo $?)" == "0" ]];do
