@@ -1,5 +1,5 @@
 #! /bin/bash
-echo "Sorry, still under development ... press a key to continue" 
+echo "Sorry, still under development ... press a key to continue"
 read -n1 -s
 usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
 D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
@@ -23,17 +23,15 @@ sortpath="$($whereispath $binaryflag sort)"
 sortpath="${sortpath#*:}";sortpath="${sortpath# }";sortpath="${sortpath%% *}"
 headpath="$($whereispath $binaryflag head)"
 headpath="${headpath#*:}";headpath="${headpath# }";headpath="${headpath%% *}"
-tailpath="$($whereispath $binaryflag tail)"
-tailpath="${tailpath#*:}";tailpath="${tailpath# }";tailpath="${tailpath%% *}"
-sedpath="$($whereispath $binaryflag sed)"
-sedpath="${sedpath#*:}";sedpath="${sedpath# }";sedpath="${sedpath%% *}"
-wcpath=$($whereispath $binaryflag wc);wcpath="${wcpath#*:}";wcpath="${wcpath# }";wcpath="${wcpath%% *}"
 min_bash_version_tested="4.3.11";! [[ "$($sortpath <<<"$(echo -e "$BASH_VERSION\n$min_bash_version_tested")"|$headpath -n 1)" == "$min_bash_version_tested" ]] && trap "echo If you had run-time errors, your version of bash might be too old" EXIT
 #    Yes, I know awk would be better, but I wanted this menu portion compatible with Mac...
 #   some effort was given to making the menu aspect of this helper script compatible with Mac running 3.2.57 bash
-if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin ]];then echo -e "This firewalling solution does not accommodate Mac nor BSD due to"\
-"\niptables and crontab dysfunction.";exit;fi
-if ! [ "$(whoami)" == "root" ];then echo -e "\nWithout being launched by su, this script\
+if [[ "$($unamepath)" =~ BSD ]] || [[ "$($unamepath)" =~ Darwin ]];then 
+    echo -e "This firewalling solution does not accommodate Mac nor BSD due to\
+\niptables and crontab dysfunction."
+    exit
+fi
+if [[ $EUID -ne 0 ];then echo -e "\nWithout being launched by su, this script\
  won't be able to do anything except\
 \ndisplay menus.  No control of this computer can be made by this script unless\
 \nre-launched by root.  Press a key to acknowledge, Ctrl-c to abort\n";read -n1 -s;fi
@@ -51,8 +49,8 @@ echo -e "\nCopyright 2016 - Kenneth L. Anderson MCSE, RDH, BGS, BT"\
      "\nstatement transiently."\
      "\n\n2.  Arrangement for your freedom from copyright display obligation, or to"\
      "\ncontribute, see the comments within the source code of this script"
-######## echo -e "\n\n       Jesus Christ is Lord of all  ... press a key to acknowledge\n"
-######## read -n1 -r
+echo -e "\n\n       Jesus Christ is Lord of all  ... press a key to acknowledge\n"
+read -n1 -r
 #    Arrangement for your freedom from copyright display obligation: Prior to
 #  distribution, email me the author: kenlovesjesus at gmail dot com to arrange USD payment.
 #  You'll insert name and details of party responsible for making the payment to the
@@ -101,29 +99,51 @@ greppath="$($whereispath $binaryflag grep)"
 greppath="${greppath#*:}";greppath="${greppath# }";greppath="${greppath%% *}"
 ifconfigpath="$($whereispath $binaryflag ifconfig)"
 ifconfigpath="${ifconfigpath#*:}";ifconfigpath="${ifconfigpath# }";ifconfigpath="${ifconfigpath%% *}"
+pumppath="$($whereispath $binaryflag pump)"
+pumppath="${pumppath#*:}";pumppath="${pumppath# }";pumppath="${pumppath%% *}"
 uniqpath="$($whereispath $binaryflag uniq)"
 uniqpath="${uniqpath#*:}";uniqpath="${uniqpath# }";uniqpath="${uniqpath%% *}"
 findpath="$($whereispath $binaryflag find)"
 findpath="${findpath#*:}";findpath="${findpath# }";findpath="${findpath%% *}";
-rhel="$($whereispath $binaryflag chkconfig)"
-rhel="${rhel#*:}";rhel="${rhel# }";rhel="${rhel%% *}"
-eval "$pythonpath -c \"import platform;print(platform.linux_distribution()[0])\" &> /dev/null > \"distributionby.${0#*/}\"" || eval "echo -e \"Functionality may be limited due to inability to determine distribution type\n...press a key to continue...\";read -n1 -s" || eval "echo $OSTYPE > \"distributionby.${0#*/}\""
+tailpath="$($whereispath $binaryflag tail)"
+tailpath="${tailpath#*:}";tailpath="${tailpath# }";tailpath="${tailpath%% *}"
+sedpath="$($whereispath $binaryflag sed)"
+sedpath="${sedpath#*:}";sedpath="${sedpath# }";sedpath="${sedpath%% *}"
+wcpath="$($whereispath $binaryflag wc)";wcpath="${wcpath#*:}";wcpath="${wcpath# }";wcpath="${wcpath%% *}"
+ippath="$($whereispath $binaryflag ip)"
+ippath="${ippath#*:}";ippath="${ippath# }";ippath="${ippath%% *}"
+pspath=$($whereispath $binaryflag ps);pspath="${pspath#*:}";pspath="${pspath# }";pspath="${pspath%% *}"
+eval "$pythonpath -c \"import platform;print(platform.linux_distribution()[0])\" &> /dev/null > \"distributionby.${0#*/}\"" \
+    || eval "echo -e \"Functionality may be limited due to inability to determine distribution type\n...press a key to continue...\";read -n1 -s" \
+    || eval "echo $OSTYPE > \"distributionby.${0#*/}\""
 eval "$ifconfigpath -a|$awkpath -F'^ ' '{print \$1}'|$awkpath '{print \$1}'|$greppath -vw lo|xargs" > "interfacesby.${0#*/}"
+inttogoogle="$($ippath -o route get 8.8.8.8|$awkpath '{ print $5 }')"
+echo -e "\n\ninterface going to google=$inttogoogle"
+intsnottogoogle="$($ippath link show|$greppath -E "^[1-9][0-9]*:"|$greppath -v lo:\
+    |$greppath -v "$inttogoogle"\
+    |$sedpath 's/://g'\
+    |$awkpath '{print $2}')"
+echo "$( [[ $(echo -e "$intsnottogoogle"|$wcpath -l) == "1" ]] \
+    && echo "$(echo -e "$intsnottogoogle"|$wcpath -l) interface" \
+    || echo "$(echo -e "$intsnottogoogle"|$wcpath -l) interfaces") not going to google=$intsnottogoogle"
 # echo "Script-required items: whereis path=$whereispath, awk path=$awkpath, python path=$pythonpath, grep path=$greppath, ifconfig path=$ifconfigpath, uniq path=$uniqpath, sort path=$sortpath, head path=$headpath";exit
 #
 # Introduction and what we'll do
-
 startscreen="\n\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`Main Configuration Screen\
 \n                SELECT DESIRED OPTIONS FOR THIS INSTALLATION\
-\n\n\n                            (f) firewalling\
-\n\n                            (r) email remote control\
-\n\n                            (d) dynamic IP address change notifier\
-\n\n                            (p) port knocking\
-\n\n                            (?) context helpful information\
+\n\n\n      (f) firewalling\
+\n\n      (r) email remote control\
+\n\n      (d) dynamic IP address change notifier"
+if [[ $($pspath aux|$greppath -vw grep|$greppath -we pump -we dhclient -we udhcpc -we dhcpcd -we dhclient3|$greppath -w $inttogoogle|$wcpath -l) -eq 0 ]];then
+     startscreen+=" NOT for your configuration";notdhcp="notdhcp"
+fi
+startscreen+="\n\n      (p) port knocking\
+\n\n      (?) context helpful information\
 \n\n
 \nTyping the letters f, r, d, p, optionally followed by a question mark, or just\
 \nplain ? with no letters, select all of the five services listed above that you\
 \nwant, then press ENTER: (or Ctrl-c at any time to terminate installer)"
+
 ghscreen="\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`\`Information Screen\
 \n                              HELPER SCRIPT OVERVIEW\
 \nThis set of Linux scripts can install several capabilities useful for\
@@ -227,9 +247,7 @@ singinterf="\nBased on finding only one pluggable network interface, your intent
 until ! [ -z "$answer" ];do
     clear
     echo -e "$startscreen"
-########### remove answer and char set line below and uncomment out next line
-    while true;do answer="fdrp";char="";[[ -z "$char" ]] && break
-#     while IFS= read  -s -n1 char;do [[ -z "$char" ]] && break
+    while IFS= read  -s -n1 char;do [[ -z "$char" ]] && break
         [[ "$answer$char" == "?" ]] && break
         if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape or extended key has been detected
             read -r -s -t 1 -n2 # read & discard 2nd extended key field, timeout if real escape
@@ -258,7 +276,6 @@ until ! [ -z "$answer" ];do
     else
         until false;do  # this loop is to set path vars after pkgs get installed, every last pkg so paths populate even after new installs
       until [ "$goahead" == "true" ];do
-        rhel=$(chkconfig --list 2> /dev/null | grep iptables)
         installers=(apt-get "install --fix-missing" dnf install yum install zypper install emerge "" pacman -S pkg install pkg_add "" xbps-install -Sy brew install port install)
         for installer in {0..10};do
               installerpath=$($whereispath $binaryflag ${installers[$(($installer * 2))]});installerpath="${installerpath#*:}";installerpath="${installerpath# }";installerpath="${installerpath%% *}"
@@ -270,13 +287,11 @@ until ! [ -z "$answer" ];do
              inotifywaitpath=$($whereispath $binaryflag inotifywait);inotifywaitpath="${inotifywaitpath#*:}";inotifywaitpath="${inotifywaitpath# }";inotifywaitpath="${inotifywaitpath%% *}"
              iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath# }";iptablespath="${iptablespath%% *}"
              iptabperspath=$($findpath / -maxdepth 3 -name *persistent|$greppath -vw doc|$greppath -vw src|$greppath -vw sys|$greppath -e iptables -e netfilter|$greppath -m 1 -e init.d 2> /dev/null)
-             dhcp_lease_path=$($findpath / -maxdepth 5 -name dhclient*.lease* 2> /dev/null)
              stdbufpath=$($whereispath $binaryflag stdbuf);stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath# }";stdbufpath="${stdbufpath%% *}"
              crontabpath=$($whereispath $binaryflag crontab);crontabpath="${crontabpath#*:}";crontabpath="${crontabpath# }";crontabpath="${crontabpath%% *}"
              sleeppath=$($whereispath $binaryflag sleep);sleeppath="${sleeppath#*:}";sleeppath="${sleeppath# }";sleeppath="${sleeppath%% *}"
              ifdownpath=$($whereispath $binaryflag ifdown);ifdownpath="${ifdownpath#*:}";ifdownpath="${ifdownpath# }";ifdownpath="${ifdownpath%% *}"
              ifuppath=$($whereispath $binaryflag ifup);ifuppath="${ifuppath#*:}";ifuppath="${ifuppath# }";ifuppath="${ifuppath%% *}"
-             pspath=$($whereispath $binaryflag ps);pspath="${pspath#*:}";pspath="${pspath# }";pspath="${pspath%% *}"
              datepath=$($whereispath $binaryflag date);datepath="${datepath#*:}";datepath="${datepath# }";datepath="${datepath%% *}"
              bcpath=$($whereispath $binaryflag bc);bcpath="${bcpath#*:}";bcpath="${bcpath# }";bcpath="${bcpath%% *}"
              atpath=$($whereispath $binaryflag at);atpath="${atpath#*:}";atpath="${atpath# }";atpath="${atpath%% *}";! [[ "${atpath: -2:2}" == "at" ]] && atpath=""
@@ -284,6 +299,7 @@ until ! [ -z "$answer" ];do
              mailpath=$($whereispath $binaryflag mail);mailpath="${mailpath#*:}";if [ -z "$mailpath" ];then
              mailpath=" $($whereispath $binaryflag mailx)";mailpath="${mailpath#*:}";fi;mailpath="${mailpath# }";mailpath="${mailpath%% *}"
              postmappath=$($whereispath $binaryflag postmap);postmappath="${postmappath#*:}";postmappath="${postmappath# }";postmappath="${postmappath%% *}"
+             postqueuepath=$($whereispath $binaryflag postqueue);postqueuepath="${postqueuepath#*:}";postqueuepath="${postqueuepath# }";postqueuepath="${postqueuepath%% *}"
              notinstalled=""
              if ! [[ "${answer%f*}" == "$answer" ]];then
                  [[ -z "$inotifywaitpath" ]] && notinstalled+="inotify-tools\n"
@@ -367,8 +383,7 @@ echo "Executing $installerpath $notinstalled"|$sedpath -e ':a' -e 'N' -e '$!ba' 
                   echo -e "$notinstalled"|$sedpath -e ':a' -e 'N' -e '$!ba' -e 's/\\n/ /g'|sudo xargs sh -c 'exec "$installerpath $@" < /dev/tty' sh
       fi
 done  # this loop is to set path vars after pkgs get installed, every last pkg so paths populate even after new installs
-######### remove commands after the do
-       until false;do   directoryforscripts="/home/homeowner";break
+       until false;do
             read -p "Specify the directory in which to install these scripts: " directoryforscripts
             ! [[ -d "$directoryforscripts" ]] && echo -e "\nHold up there, Speedy.  That directory doesn't exist.  Try again.\n" || break
        done
@@ -399,7 +414,6 @@ $iptablespath -wt nat -I POSTROUTING 1  -o eth0  -p all -j MASQUERADE
 $iptablespath -wP INPUT ACCEPT
 $iptablespath -wP FORWARD ACCEPT
 $iptablespath -wP OUTPUT ACCEPT
-$iptablespath -wN 3dot2not8081
 $iptablespath -wN GATE1
 $iptablespath -wN GATE2
 $iptablespath -wN GATE3
@@ -428,7 +442,6 @@ $iptablespath -wI INPUT 1  -p all -j s_static_trusted
 $iptablespath -wI INPUT 1  -i eth1  -p all -j ACCEPT
 $iptablespath -wI INPUT 1  -d 192.168.3.2  -p all -j ACCEPT
 $iptablespath -wI INPUT 1  -p all -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-$iptablespath -wI FORWARD 1  ! -s 192.133.1.2  -p all -j ACCEPT
 $iptablespath -wI FORWARD 1  -p all -j DROP
 $iptablespath -wI FORWARD 1  -p all -j LOG --log-level 4
 $iptablespath -wI FORWARD 1  -p all -j s_blacklist
@@ -450,10 +463,6 @@ $iptablespath -wI OUTPUT 1  -p all -j d_blacklist
 $iptablespath -wI OUTPUT 1  -p all -j d_whitelist
 $iptablespath -wI OUTPUT 1  -p all -j d_static_trusted
 $iptablespath -wI OUTPUT 1  -d 207.177.27.130  -p all -j ACCEPT
-$iptablespath -wI 3dot2not8081 1  -p all -j DROP
-$iptablespath -wI 3dot2not8081 1  -p all -j LOG --log-level 4
-$iptablespath -wI 3dot2not8081 1  -p tcp ! --dport 8081 -j ACCEPT
-$iptablespath -wI 3dot2not8081 1  -p all -j s_whitelist
 $iptablespath -wI GATE1 1  -p all -j DROP
 $iptablespath -wI GATE1 1  -p tcp --dport 4080 -m recent --set --name AUTH1 -j DROP
 $iptablespath -wI GATE2 1  -p all -j GATE1
@@ -507,20 +516,6 @@ $iptablespath -wI d_whitelist 1  -o eth0  -d 208.80.206.63  -p all -m comment --
 p mail server Sat Jan  9 08:32:13 CST 2016" -j ACCEPT
 $iptablespath -wI d_whitelist 1  -o eth0  -d 208.80.204.253  -p all -m comment --comment "isp mail server Sat Jan  9 08:34:48 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 208.80.204.253  -p all -m comment --comment "
 isp mail server Sat Jan  9 08:34:48 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 98.179.31.188  -p all -m comment --comment "knocked Sat Jan 16 12:26:40 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 98.179.31.188  -p all -m comment --comment "knocked Sa
-t Jan 16 12:26:40 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 207.177.27.131  -p all -m comment --comment "via email Sat Jan 16 20:12:44 CST 2016 Sat Jan 16 20:12:44 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 207.177.27.131  -p all
- -m comment --comment "via email Sat Jan 16 20:12:44 CST 2016 Sat Jan 16 20:12:44 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 68.15.224.232  -p all -m comment --comment "via email Sun Jan 17 18:42:53 CST 2016 Sun Jan 17 18:42:53 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 68.15.224.232  -p all -
-m comment --comment "via email Sun Jan 17 18:42:53 CST 2016 Sun Jan 17 18:42:53 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 97.107.199.77  -p all -m comment --comment "via email Mon Jan 18 10:22:01 CST 2016 Mon Jan 18 10:22:01 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 97.107.199.77  -p all -
-m comment --comment "via email Mon Jan 18 10:22:01 CST 2016 Mon Jan 18 10:22:01 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 166.175.63.191  -p all -m comment --comment "via email Sat Jan 30 20:22:53 CST 2016 Sat Jan 30 20:22:53 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 166.175.63.191  -p all
- -m comment --comment "via email Sat Jan 30 20:22:53 CST 2016 Sat Jan 30 20:22:53 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 70.198.33.1  -p all -m comment --comment "via email Fri Feb  5 19:05:20 CST 2016 Fri Feb  5 19:05:20 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 70.198.33.1  -p all -m co
-mment --comment "via email Fri Feb  5 19:05:20 CST 2016 Fri Feb  5 19:05:20 CST 2016" -j ACCEPT
-$iptablespath -wI d_whitelist 1  -o eth0  -d 184.187.14.228  -p all -m comment --comment "via email Fri Feb 12 12:46:37 CST 2016 Fri Feb 12 12:46:37 CST 2016" -j ACCEPT;$iptablespath -wI s_whitelist 1  -i eth0  -s 184.187.14.228  -p all
- -m comment --comment "via email Fri Feb 12 12:46:37 CST 2016 Fri Feb 12 12:46:37 CST 2016" -j ACCEPT
 $iptablespath -wI s_privateIPs 1  -i eth0  -s 192.168.0.0/16  -p all -m comment --comment "private IPs" -j DROP
 $iptablespath -wI s_privateIPs 1  -s 172.16.0.0/12  -p all -m comment --comment "private IPs" -j DROP
 $iptablespath -wI s_privateIPs 1  -s 10.0.0.0/8  -p all -m comment --comment "private IPs" -j DROP
@@ -537,12 +532,6 @@ $iptablespath -wI s_static_trusted 1  -s 208.67.222.222  -p all -m comment --com
 $iptablespath -wI s_static_trusted 1  -s 199.102.46.70  -p all -m comment --comment "local time server hosted by Monticello" -j ACCEPT
 $iptablespath -wI s_static_trusted 1  -i lo  -p all -m comment --comment "allow all from 127.0.0.1" -j ACCEPT
 $iptablespath -wI s_static_trusted 1  -p all -m comment --comment "established connections are assumed to be OK" -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
-$iptablespath -wI s_static_trusted 1  -s 206.72.26.254  -p all -m comment --comment "isp server" -j ACCEPT
-$iptablespath -wI s_static_trusted 1  -s 207.32.31.195  -p all -m comment --comment "isp server" -j ACCEPT
-$iptablespath -wI s_static_trusted 1  -s 167.142.225.5  -p all -m comment --comment "isp server" -j ACCEPT
-$iptablespath -wI s_static_trusted 1  -s 207.32.31.196  -p all -m comment --comment "isp server" -j ACCEPT
-$iptablespath -wI s_whitelist 1 -i eth0 -s 174.74.1.69  -m comment --comment "via email Sun Feb 28 16:48:56 CST 2016 Sun Feb 28 16:48:56 CST 2016" -j ACCEPT;$iptablespath -wI d_whitelist 1 -o eth0 -d 174.74.1.69 -m comment --comment "vi
-a email Sun Feb 28 16:48:56 CST 2016 Sun Feb 28 16:48:56 CST 2016" -j ACCEPT
 BUILDIPTABLES.SH_END
 ) > "$directoryforscripts/buildiptables.sh"
           chmod 755 "$directoryforscripts/buildiptables.sh"
@@ -558,16 +547,9 @@ BUILDIPTABLES.SH_END
 $($crontabpath -l)\
 */30 * * * * $iptabperspath save >/dev/null 2>&1
  # @reboot $iptabperspath reload >/dev/null 2>&1
-@reboot $nicepath -n19 $inotifywaitpath --quiet --monitor --event modify /var/lib/dhcp/dhclient.eth0.leases|while read;do "$directoryforscripts/newip_no_mysql.sh";done >/dev/null 2>&1
-@reboot "$directoryforscripts/newip_no_mysql.sh\" >/dev/null 2>&1
 #@reboot if [ \$($iptablespath -w -L INPUT -n|$stdbufpath -o0 /bin/grep -m 1 -c ESTABLISHED) -eq "0" ]; then "$directoryforscripts/buildiptables.sh";fi >/dev/null 2>&1
 @reboot $nicepath -n15 $tailpath -F -n 0 /var/log/kern.log|$greppath --line-buffered ' SRC='|$stdbufpath -o0 $greppath -v 'SRC=10\.'|$stdbufpath -o0 $greppath -v 'SRC=0\.0\.0\.0'|$stdbufpath -o0 $greppath -v 'SRC=127.0\.0\.1'|$stdbufpath -o0 $greppath -v 'SRC=192\.168\.'|$stdbufpath -o0 $awkpath '{for (i=4;i<=NF;i++) {if (\$i ~ "^SRC=") {{gsub("SRC=","",\$i); printf \$i" \""} printf "kern.log "\$1" "\$2" "\$3; for (i=i;i<=NF;i++) {if (\$i ~ "^PROTO=" || \$i ~ "^SPT=" || \$i ~ "^DPT") {printf " "\$i}} print "\""}}}'|xargs -l1 "$directoryforscripts/blacklistme.sh"  >/dev/null 2>&1
 */3 * * * * echo "$iptablespath s_blacklist chain is \$($iptablespath -wnL s_blacklist --line-numbers|$tailpath -n-1|$awkpath '{print \$1}') lines long" >> "$directoryforscripts/modemcheck.lastran.log"; if [ \$($ifconfigpath|$headpath -n+2|$greppath -c "inet ") -eq 0 ] || [[ \$($greppath ^d1 <"$directoryforscripts/usbrelay.log"|$tailpath -n 1|$awkpath '{for (i=4;i>=0;i--) {printf \$(NF-i)" "}print ""}') < \$( $greppath -w waiting /var/log/syslog|$greppath '\:123'|$greppath -v grep|$tailpath -n 1|$awkpath '{print $1" "$2" "$3}' ) ]]; then "$directoryforscripts/usbrelay d1";$sleeppath 1;"$directoryforscripts/usbrelay a1";$ifdownpath eth0;$ifuppath eth0; fi >/dev/null 2>&1
-*/3 * * * * if [ \$($pspath aux|$greppath "/usr/sbin/knockd \-d \-i eth0"|$greppath -vc grep) -lt 1 ] || [ \$($tailpath -n-1 /var/log/knockd.log|$greppath -c shutting) -gt 0 ] && [ \$($pspath aux|$greppath sshd:|$greppath -vc root) -eq 0 ]; then /etc/init.d/knockd stop;$sleeppath 1;/etc/init.d/knockd start;fi >/dev/null 2>&1
-0 3 * * * echo "$directoryforscripts/usbrelay d8"|$atpath \$(timevar=\$($awkpath '{timevar=('\$($bcpath <<< "\$($datepath +\%m) * 2")');printf \$timevar}' <($headpath -n+1 <($tailpath -n-\$($bcpath <<< "32 - \$($datepath +\%d)") "$directoryforscripts/sunrise-set.local")));datevar=\$($datepath +\%Z);if [ \${datevar: -2:1} == "D" ];then timevar=\$($bcpath <<< "\${timevar:0:2} + 1")\${timevar:2};fi;$datepath -d "$timevar today + 20 minutes" +\%H\%M)
-0 3 * * * echo "$directoryforscripts/usbrelay a8"|$atpath \$(timevar=\$($awkpath '{timevar=('\$($bcpath <<< "1 + \$($datepath +\%m) * 2")');printf \$timevar}' <($headpath -n+1 <($tailpath -n-\$($bcpath <<< "32 - \$($datepath +\%d)") "$directoryforscripts/sunrise-set.local")));datevar=\$($datepath +\%Z);if [ \${datevar: -2:1} == "D" ];then timevar=\$($bcpath <<< "\${timevar:0:2} + 1")\${timevar:2};fi;$datepath -d "$timevar today - 10 minutes" +\%H\%M)
-@reboot timerise=\$($awkpath '{timerise=('\$($bcpath <<< "\$($datepath +\%m) * 2")');printf \$timerise}' <($headpath -n+1 <($tailpath -n-\$($bcpath <<< "32 - \$($datepath +\%d)") "$directoryforscripts/sunrise-set.local")));datevar=\$($datepath +\%Z);if [ \${datevar: -2:1} == "D" ];then timerise=\$($bcpath <<< "\${timerise:0:2} + 1")\${timerise:2};fi;timeset=\$($awkpath '{timeset=('\$($bcpath <<< "1 + \$($datepath +\%m) * 2")');printf \$timeset}' <($headpath -n+1 <($tailpath -n-\$($bcpath <<< "32 - \$($datepath +\%d)") "$directoryforscripts/sunrise-set.local")));datevar=\$($datepath +\%Z);if [ \${datevar: -2:1} == "D" ];then timeset=\$($bcpath <<< "\${timeset:0:2} + 1")\${timeset:2};fi;if [ \$($bcpath <<< "\$($datepath +\%H\%M) - \$timerise") -ge 0 ] && [ \$($bcpath <<< "\$timeset - \$($datepath +\%H\%M)") -ge 0 ];then "$directoryforscripts/usbrelay d8";else "$directoryforscripts/usbrelay a8";fi
-@reboot $nicepath -n19 $inotifywaitpath -q --monitor --format "\%f" --event create /var/run/|while read filename;do if [ \$filename == "reboot-required" ];then "$directoryforscripts/rebootreqd";fi;done >/dev/null 2>&1
 # 10 * * * * nice -n19 "$directoryforscripts/email_fetch_parse" >/dev/nul 2>&1
 CRONTAB_ENTRIES_END
 ) |$crontabpath -
@@ -581,9 +563,7 @@ echo "crontab set up..."
        conf_postfix () {
 # See https://www.linode.com/docs/email/postfix/postfix-smtp-debian7
 line=""
-############### remove line up to the until statement
-line="fdgfhjk@gmail.com"
-outemailadd="ertyuik@cox.net";outemailpw="-------";outemailacct="${outemailadd%@*}";outemailprovider="${outemailadd#*@}";outemaildomain="${outemailprovider%.*}";outtopdomain="${outemailprovider#*.}";outemailsubdomain="smtp";
+# outemailacct="${outemailadd%@*}";outemailprovider="${outemailadd#*@}";outemaildomain="${outemailprovider%.*}";outtopdomain="${outemailprovider#*.}";outemailsubdomain="smtp";
 while true;do
      clear;echo -e "Three emailing functions need email addresses.  Provide at least one email\
 \naddress now.  The address[es] asked for now is/are the one or more that will\
@@ -593,7 +573,7 @@ while true;do
 \nphone carriers often limit the length of email-to-texting conversion and cut\
 \nshort the longer texts."
      echo -e "\nAddress[es] where to send notifications to:\n"
-     toemailadds="4567899876@text.republicwireless.com\nghjk,kj@walnutel.net\nrtyujkkl@cox.net\n";printf "$toemailadds$line"
+     toemailadds="$(sedpath 's/,/\n/g' <"$directoryforscripts/toemailadds")"
      while IFS= read  -s -n1 -r char;do # [[ -z "$char" ]] && break
           if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape or extended key has been detected, single quote important
                      read -r -s -t 1 -n2 # read & discard 2nd extended key field, timeout if real escape
@@ -691,10 +671,7 @@ echo "\$@" >> "\$0"
 EOF1
 ) > "timeouttry.sh"
 chmod 700 "timeouttry.sh"
-#          stty -echo; echo -n $'\e[6n'; read -d R x; stty echo;xypos="${x#??}";ypos="${xypos%;*}";xpos="${xypos#*;}"
-# gomore="run1"
 while true;do  #this loop allows user to select an email account for outbound server & builds connect.txt file
-#     until [[ -f "$directoryforscripts/$outemailprovider.outconnects.txt" ]]; do #this loop goes through all connections found for a given address
      while true; do #this loop goes through all connections found for a given address
           scratchpad="${toemailadds%%'\n'*}"
           toemailaddid=1 ;horizptr="${#scratchpad}"
@@ -853,7 +830,6 @@ while true;do  #this loop allows user to select an email account for outbound se
           cat /etc/ssl/certs/Thawte_Premium_Server_CA.pem | tee -a /etc/postfix/cacert.pem 1&>/dev/null
           chown postfix /etc/postfix/sasl_passwd*
           /etc/init.d/postfix reload
-          postqueuepath=$($whereispath $binaryflag postqueue);postqueuepath="${postqueuepath#*:}";postqueuepath="${postqueuepath# }";postqueuepath="${postqueuepath%% *}"
           if ! [[ "$( $postqueuepath -p )" == *is\ empty* ]];then
                echo -e "For the next step, the mail queue needs to be flushed.  You will lose the\
 \nfollowing emails that haven't been sent.  Press a key to acknowledge..."
@@ -901,12 +877,12 @@ echo -e "\nFind a different way to get this !!!!!!!!!!!\n"
           }
           install_rc () {
 directoryforscripts="$( cat directoryforscripts )"
-line="k,sjdk,@walnutel.net"
+line="timeiselastic@walnutel.net"
 inemailadd="";inemailacct="${inemailadd%@*}";inemailprovider="${inemailadd#*@}";inemaildomain="${inemailprovider%.*}";intopdomain="${inemailprovider#*.}";inemailsubdomain="pop";
 rm successlogins 2>/dev/null
 clear
 while true;do
-     echo -e "Enter the email address now that this system will retrieve instructions through\
+     echo -e "Enter the email address now from which this system will retrieve instructions\
 \nthat you or others will send in:\n";printf "$line"
      while IFS= read  -s -n1 -r char;do # [[ -z "$char" ]] && break
           if [[ "$(printf "%d" "'$char")" == "27" ]];then # escape or extended key has been detected, single quote important
@@ -934,14 +910,13 @@ while true;do
                           line+="$char"
           fi
      done
-             ! [[ -z "$line" ]] && break || exit
+             [[ -z "$line" ]] && break
               echo -e "Configuring for that email account.  You should be doing\
 \nthis step from the Internet location of final operation if you have/want your\
 \nlocal ISP-provided email account considered for this...\n"
               [[ -f "$directoryforscripts/$inemailprovider.inconnects.txt" ]] \
                  && rm "$directoryforscripts/$inemailprovider.inconnects.txt" 2>/dev/null
               printf  "\rSelected address $line \033[K\n"
-          
 #          while ! nc -zw1 google.com 80; do #note that port 80 might always be true even for invalid site if the local ISP substitutes for non-existers
 #                printf "\r\033[KNo internet connection found with full DNS.  Press a key when corrected...";read -n1 -s
 #          done
@@ -971,7 +946,7 @@ while true;do
               [[ -z "$rcpw$rcpw1" ]] && break 2
               ! [[ "$rcpw" == "$rcpw1" ]] && continue
               rm fifo 2>/dev/null
-# mkfifo fifo
+# mkfifo fifo doesn't work as we need it to, just use a regular file instead with same name
               while read -u 3 -r line;do #? this while loop iterates once for each port that accepted a pop connection ${line%:*}"."$outemailprovider"]:"${line#*:}
                   while true;do # This loop for exact settings retry
                       exec 5>&-;wait
@@ -986,10 +961,11 @@ printf "\n$HELO"
                            printf "\r\033[KSending $msg\n"
                            echo -e "$msg" >&5
                          #  while true;do # this loop stores server responses for a configuration
+# using 'cat <&5' would probably timeout on most single-line reads
                            while (read -u 5 replyline
                                   printf "\r\033[K$replyline\n"
                                   echo "$replyline" >> fifo 
-                                  ! [[ "${replyline:0:1}" == "+" ]] && break
+                                  ! [[ "${replyline:0:1}" == "+" ]] && break # ! [[ "${replyline:0:1}" == "+" ]] && break
                                  ) &
                                 pid="$!"
                            do
@@ -1219,12 +1195,90 @@ EOF
 chmod 700 "$directoryforscripts/email_fetch_parse"
           }
 install_dynIPch () {
-:
-##The following 3 lines are intentionally redundant to allow system admin to change dhcp client package and still get notified of dhcp change
-##
-#/var/lib/dhclient/dhclient-eth0.leases
-#/var/lib/dhcp/dhclient.eth0.leases
-#/var/lib/dhcp3/dhclient.leases
+#dhcp_lease_path
+# mac=ipconfig getpacket (interface name)
+#dhcp_message_type (uint8): ACK 0x5
+#server_identifier (ip): 192.168.0.1
+#lease_time (uint32): 0xf20
+#subnet_mask (ip): 255.255.255.0
+#router (ip_mult): {192.168.0.1}
+#domain_name_server (ip_mult): {116.1.12.4, 116.1.12.5}
+#end (none): 
+#dhclient:
+#Listening on LPF/eth0:avahi/00:26:b9:ef:57:dd
+#Sending on   LPF/eth0:avahi/00:26:b9:ef:57:dd
+#Listening on LPF/wlan0/5c:ac:4c:29:53:d0
+#Sending on   LPF/wlan0/5c:ac:4c:29:53:d0
+#Listening on LPF/eth0/00:26:b9:ef:57:dd
+#Sending on   LPF/eth0/00:26:b9:ef:57:dd
+#Sending on   Socket/fallback
+#DHCPDISCOVER on eth0:avahi to 255.255.255.255 port 67 interval 3 (xid=0xde511649)
+#DHCPREQUEST of 10.100.100.173 on wlan0 to 255.255.255.255 port 67 (xid=0x275b221c)
+#DHCPDISCOVER on eth0 to 255.255.255.255 port 67 interval 3 (xid=0x2727213c)
+#DHCPACK of 10.100.100.173 from 172.22.0.5
+#RTNETLINK answers: File exists
+#bound to 10.100.100.173 -- renewal in 9225 seconds.
+#
+#read /etc/network/interfaces
+#OS X=/Library/Preferences/SystemConfiguration/preferences.plist
+# centos: 
+# udhcpc: /var/lib/misc/udhcpc-$inttogoogle.leases or /var/cache/udhcpc-$inttogoogle.lease, not really clear for embedded linux's.  This is an important one to get right
+# dhcpcd: /etc/dhcpc/dhcpcd-$inttogoogle.info
+# pump: in memory alone, need to parse ps uax output
+# dhclient: /var/lib/NetworkManager/*.lease*, or /var/lib/dhcp/dhclient. or on FreeBSD /var/db/*lease*
+# /var/lib/dhcp3/dhclient.%iface%.leases
+#if [[ $(( cat $(ls /var/lib/dhclient/*.lease* /var/lib/dhcp/*.lease* /var/lib/dhcp3/*.lease* /var/lib/NetworkManager/*.lease* /var/lib/dhcpcd/*$inttogoogle* /var/db/*lease* 2>/dev/null|$greppath -w "$inttogoogle")|$greppath -w $($ippath -o route get 8.8.8.8|$awkpath '{ print $7 }')|$wcpath -l )) -eq 0 ]] && \
+#[[ $(( cat $(ls /var/lib/dhclient/*.lease* /var/lib/dhcp/*.lease* /var/lib/dhcp3/*.lease* /var/lib/NetworkManager/*.lease* /var/db/*lease* 2>/dev/null|$greppath -vw "$intsnottogoogle")|$greppath -wC 3 $($ippath -o route get 8.8.8.8|$awkpath '{ print $5 }')|$greppath -w $($ippath -o route get 8.8.8.8|$awkpath '{ print $7 }')|$wcpath -l  )) -eq 0 ]];then
+#[[ $(( dhclient -v $inttogoogle|$wcpath -l 2>/dev/null )) -gt 0 ]]
+# get the ip address of $inttogoogle from ip route or ifconfig or ipconfig
+#   /etc/network/interfaces, grep for lines tno starting w/# and referencing googleinterface that say 'static' orf 'dhcp'
+# static int dhcp_up(interface_defn *ifd, execfn *exec) {
+# {
+#   if (!execute("[[ifconfig %iface% hw %hwaddress%]]", ifd, exec)) return 0;
+# }
+# if ( execable("/sbin/dhclient3") ) {
+# if (!execute("dhclient3 -pf /var/run/dhclient.%iface%.pid -lf /var/lib/dhcp3/dhclient.%iface%.leases %iface%", ifd, exec)) return 0;
+# }
+# else if ( execable("/sbin/dhclient") ) {
+# if (!execute("dhclient -v -pf /var/run/dhclient.%iface%.pid -lf /var/lib/dhcp/dhclient.%iface%.leases %iface%", ifd, exec)) return 0;
+# }
+# else if ( execable("/sbin/pump") && mylinuxver() >= mylinux(2,1,100) ) {
+# if (!execute("pump -i %iface% [[-h %hostname%]] [[-l %leasehours%]]", ifd, exec)) return 0;
+# }
+# else if ( execable("/sbin/udhcpc") && mylinuxver() >= mylinux(2,2,0) ) {
+#   if (!execute("udhcpc -n -p /var/run/udhcpc.%iface%.pid -i %iface% [[-H %hostname%]]            [[-c %client%]]", ifd, exec)) return 0;
+# }
+# else if ( execable("/sbin/dhcpcd") ) {
+# if (!execute("dhcpcd [[-h %hostname%]] [[-i %vendor%]] [[-I %client%]]            [[-l %leasetime%]] %iface%", ifd, exec)) return 0;
+# }
+# 
+#FIRST: LOOK FOR PS AUX OUTPUT THAT EVIDENCES THAT IFACE IS SERVED BY ONE OF THE DHCP CLIENTS, IF NEED BE THEN ENSURE NO 'STATIC' IN /etc/network/interfaces FOR THAT IFACE as in:
+# /sbin/dhclient -d -sf /usr/lib/NetworkManager/nm-dhcp-client.action -pf /run/sendsigs.omit.d/network-manager.dhclient-wlan0.pid -lf /var/lib/NetworkManager/dhclient-58a215d6-1342-4ce9-8da8-e75dab5b68c3-wlan0.lease -cf /var/lib/NetworkManager/dhclient-wlan0.conf wlan0
+directoryforscripts="$( cat directoryforscripts )"
+dhcpclientpath=""
+for dhcpclientpkg in "pump -i $inttogoogle --status" "udhcpc -i $inttogoogle" "dhcpcd $inttogoogle" "ipconfig getpacket $inttogoogle" "dhclient -v $inttogoogle";do
+    dhcpclientpath="$($whereispath $binaryflag ${dhcpclientpkg%% *})"
+    dhcpclientpath="${dhcpclientpath##*:}"
+    [[ -z "$dhcpclientpath" ]] && continue
+    dhcpclientpath="${dhcpclientpath# }"
+    dhcpclientpath="${dhcpclientpath%% *}"
+    echo "Executing <$dhcpclientpath ${dhcpclientpkg#* }>"
+exit
+    $($dhcpclientpath ${dhcpclientpkg#* } | $greppath -i renew ) # |$greppath  # since there could be several dhcp clients installed we know only one will be working, eliminate non-working ones
+done
+if [[ -z "$dhcpclientpath" ]];then
+    echo -e "Unable to verify that the Internet-pointing interface is a DHCP client.  If said\
+\ninterface is not using DHCP as a DHCP client, there is no point in installing\
+\nthis feature.  If it IS a dhcp client, then the finding of this script is in\
+\nerror, and you'll have to modify this script to so it learns how to detect and\
+\nmonitor for DHCP changes specific to your system.  Exiting now..."
+    exit
+fi
+
+if ! [[ -z "$toemailaddsIP" ]];then
+     echo "$(echo "${toemailaddsIP:: -2}"|$sedpath 's/\\n/,/g')" > "$directoryforscripts/toemailaddsIP"
+     break
+fi
 # "$directoryforscripts/newdynip.sh"
 echo -e "The notification email you'd receive should refer to this computer by what name?"
 pcname=$(while read -e -r -i "$(hostname)" sysname;do if ! [[ -z "$sysname" ]];then echo "$sysname";break;fi;done)
@@ -1239,7 +1293,83 @@ fi
 resolver="$(while read -e -i "dig +short myip.opendns.com @resolver1.opendns.com" resolver;do 
      echo "$resolver";break;
 done)"
-echo -e "In the email that will inform those recipients who you'll specify of the new IP\
+echo -e "\nAddress[es] where to send IP change notifications to:\n"
+toemailaddsIP="$($sedpath 's/,/\n/g' <"$directoryforscripts/toemailaddsIP")"
+scratchpad="${toemailaddsIP##*'\n'}"
+line="${toemailaddsIP##*'\n'}";printf "$line"
+toemailaddsIPid=1
+              while IFS= read  -s -n1 -r char;do
+                   if [[ "$(printf "%d" "'$char")" == "27" ]];then
+                         char1="";char2="";char3=""
+                         read -r -s -t 0.001 -n1 char1
+                         read -r -s -t 0.001 -n1 char2
+                         read -r -s -t 0.001 -n1 char3
+                         if [[ "$char1$char2$char3" == "[A" ]] || [[ "$char1$char2$char3" == "[B" ]];then
+                              if [[ "$char1$char2$char3" == "[A" ]];then
+                                   toemailaddsIPid=$(( $toemailaddsIPid - 1 ))
+                              else
+                                   toemailaddsIPid=$(( $toemailaddsIPid + 1 ))
+                              fi
+                              if [[ $(( $toemailaddsIPid )) -lt 1 ]];then
+                                    toemailaddsIPid=$(( $toemailaddsIPid + 1 ))
+                                    continue
+                              fi
+                              scratchpad="$toemailaddsIP"
+                              for i in `seq 2 $(( $toemailaddsIPid ))`;do
+                                   ! [[ -z "${scratchpad#*'\n'}" ]] \
+                                       && scratchpad="${scratchpad#*'\n'}" \
+                                       || toemailaddsIPid=$(( $toemailaddsIPid - 1 ))
+                              done
+                              scratchpad="${scratchpad%%'\n'*}"
+                              printf "\r${scratchpad}\033[K"
+                              horizptr="$(( ${#scratchpad} ))"
+                         elif [[ "$char1$char2$char3" == "[C" ]];then
+                              if [[ $(( ${horizptr} )) -lt $(( ${#scratchpad} )) ]];then
+                                    horizptr="$(( ${horizptr} + 1 ))"
+                                    printf "\033[1C"
+                              fi
+                         elif [[ "$char1$char2$char3" == "[D" ]];then
+                              if [[ $(( ${horizptr} )) -gt 0 ]];then
+                                    horizptr="$(( ${horizptr} - 1 ))"
+                                    printf "\033[1D"
+                              fi
+                         elif [[ "$char1$char2$char3" == "OF" ]];then
+                              horizptr="$(( ${#scratchpad} ))"
+                              printf "\r\033[${#scratchpad}C"
+                         elif [[ "$char1$char2$char3" == "OH" ]];then
+                              horizptr="0"
+                              printf "\r"
+                         elif [[ "$char1$char2$char3" == "[3~" ]];then
+                              if [[ $(( ${horizptr} )) -lt $(( ${#scratchpad} )) ]];then
+                                   scratchpad="${scratchpad:0:horizptr}${scratchpad:horizptr+1}" # handles the delete character
+                                   printf "${scratchpad:horizptr}\033[K\r${scratchpad:0:horizptr}"
+                              fi
+                         fi
+                   elif [[ "$(printf "%d" "'$char")" == "127" ]];then
+                     if ! [[ $(( ${horizptr} )) -eq 0 ]];then # exit
+                         horizptr="$(( ${horizptr} - 1 ))"
+                         scratchpad="${scratchpad:0:horizptr}${scratchpad:horizptr+1}" # handles the backspace character
+                         printf "\033[1D${scratchpad:horizptr}\033[K\r${scratchpad:0:horizptr}"
+                     fi
+                   elif [[ -z "$char" ]];then
+                         break
+                   else
+                        horizptr="$(( ${horizptr} + 1 ))"
+                        scratchpad="${scratchpad:0:horizptr-1}$char${scratchpad:horizptr-1}"
+                        printf "$char${scratchpad:horizptr}\033[K\r${scratchpad:0:horizptr}"
+                   fi
+              done
+              outemailadd="${scratchpad%%'\n'*}"
+              outemailacct="${outemailadd%@*}";outemailprovider="${outemailadd#*@}"
+              outemaildomain="${outemailprovider%.*}"
+              outtopdomain="${outemailprovider##*.}"
+              if ! [[ "$outemailadd" == "$outemailacct"@"$outemaildomain"."$outtopdomain" ]] || [[ -z "$outemaildomain" ]] || [[ -z "$outtopdomain" ]];then
+                  printf "\nEmail address not in correct format.  Re-enter it...\033[1A\r$scratchpad";horizptr="${#scratchpad}"
+                  continue
+              fi
+          ! [[ -z "$outemailadd" ]] && break
+# echo "";echo -e "Addresses are\n\n${toemailadds:: -2}"
+echo -e "In the email that will inform those recipients who you specified of the new IP\
 \naddress listed as one or a series of link[s] formatted as any browser would\
 \naccept in the address bar, enter the protocol, subdirectories and options, and\
 \nport that the address will begin and end with, in as many combinations as you'd\
@@ -1263,7 +1393,7 @@ echo -e "In the email that will inform those recipients who you'll specify of th
 # arg 1 is file name of modified file in same directory as leases
 # verify ending type is lease or leases
 # then parse backwards making sure no private ip range is referenced
-! [[ "\${1##*.}" == "lease" ]] && ! [[ "\${1##*.}" == "leases" ]] && exit
+! [[ "\${1##*.}" == "lease" ]] && ! [[ "\${1##*.}" == "leases" ]] && ! [[ "\$1" =~ /etc/dhcpc/dhcpcd*.info ]] && ! [[ \"$1" =~ /usr/share/udhcpc/default.script ]] && ! [[ -z "$1" ]] && exit
 #site-specific variables:
 webpageprotocol=https
 emailsubjectline="New IP address for $pcname: "
@@ -1287,28 +1417,59 @@ echo "IP address is <\$ip_from_resolver> and not acceptable"
     exit
 fi
 echo -e "$webpageprotocol://$ip_from_resolver/zm\
-\nhttp://$ip_from_resolver:9080\
-\nhttp://$ip_from_resolver:8080\
-\nhttp://$ip_from_resolver:7080\
-\nhttp://$ip_from_resolver:6080\
-\nhttp://$ip_from_resolver:5080\
-\nhttp://$ip_from_resolver:4080\
-\nssh homeowner@$ip_from_resolver\
-\nnc -w 1 $ip_from_resolver\
+\nhttp://\$ip_from_resolver:9080\
+\nhttp://\$ip_from_resolver:8080\
+\nhttp://\$ip_from_resolver:7080\
+\nhttp://\$ip_from_resolver:6080\
+\nhttp://\$ip_from_resolver:5080\
+\nhttp://\$ip_from_resolver:4080\
+\nssh homeowner@\$ip_from_resolver\
+\nnc -w 1 \$ip_from_resolver\
 \n$webpageprotocol://192.168.3.3/zm\
-\nhttp://192.168.3.9:9080\
-\nhttp://192.168.3.8:8080\
-\nhttp://192.168.3.7:7080\
-\nhttp://192.168.3.6:6080\
-\nhttp://192.168.3.5:5080\
-\nhttp://192.168.3.4:4080\
-\nssh homeowner@192.168.3.1\
-\n" | mail -s "$emailsubjectline" $emaildestination
+\nhttp://192.168.1.9:9080\
+\nhttp://192.168.1.8:8080\
+\nhttp://192.168.1.7:7080\
+\nhttp://192.168.1.6:6080\
+\nhttp://192.168.1.5:5080\
+\nhttp://192.168.1.4:4080\
+\nssh homeowner@192.168.1.1\
+\n" | mail -s "\$emailsubjectline" \$emaildestination
 
 echo \$ip_from_resolver > \$file_to_store_ip
 echo "IP address is <\$ip_from_resolver>"
 EOF
 ) > "$directoryforscripts/newdynip.sh"
+
+#  Only need to confirm if there are entries in crontab
+! [[ "$(eval $crontabpath -l|$greppath -E -v ^#|$greppath -v ^[[:space:]]*$|$wcpath -l)" == "0" ]] && \
+     (echo -e "$(eval $crontabpath -l|$greppath -E -v ^#|$greppath -v ^[[:space:]]*$|$wcpath -l) entries in crontab:\n\n$(eval "$crontabpath -l|$greppath -E -v ^#|$greppath -v ^[[:space:]]*$")\n"
+      echo "Confirm you understand that your crontab shell is now getting changed which"
+      read -n1 -s -p "might affect the above entries if they send values on, contain quotes, etc.: ")
+(cat << CRONTAB_ENTRIES_END
+$($crontabpath -l)\
+@reboot "$directoryforscripts/newdynip.sh" >/dev/null 2>&1
+##The following lines are intentionally redundant to allow system admin to change dhcp client package and still get notified of dhcp change
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp/dhclient.eth0.leases|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /etc/dhcpc/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # dhcpcd*.info        DO MONITOR, make separate entry for each file found
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event access /usr/share/udhcpc/default.script|while read filename;do "$directoryforscripts/newdynip.sh";done >/dev/null 2>&1 # NEED TO INOTIFYWAIT MONITOR FOR "ACCESS" THE SCRIPT FILE THAT GETS EXECUTED ON CHANGE
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/db/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # dhclient*.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcpd/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # dhcpd.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp3/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp3/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # dhclient*.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcp3/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhcpcd/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/dhclient/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/misc/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # udhcpc*.lease*
+@reboot $nicepath -n19 $inotifywaitpath --format %w%f --quiet --monitor --event modify /var/lib/NetworkManager/|while read filename;do "$directoryforscripts/newdynip.sh" "\$filename";done >/dev/null 2>&1 # *.lease*
+CRONTAB_ENTRIES_END
+) |$crontabpath -
+[[ "$(eval "$crontabpath -l|$greppath -c \"SHELL=\"")" == "0" ]] && \
+  echo -e "SHELL=/bin/bash\n$($crontabpath -l)"|$crontabpath - || \
+  eval "$crontabpath -l|$sedpath \"/SHELL=/c\SHELL=/bin/bash\"|$crontabpath -"
+echo "crontab set up..."
+
 
 <<EOF1
 :
@@ -1334,32 +1495,28 @@ end_warnings () {
 \nyou've made to your Internet connectivity!  Though let's hope they'll have\
 \nbetter reason for doing so than that."
 }
-       directoryforscripts="${directoryforscripts%%/}"
-#        if ! [[ "${answer%f*}" == "$answer" ]];then
-#            echo "firewalling"
-# determine usable interfaces, build for eth0 dhcp in, eth1 static out first
-########### uncomment the next two lines
-#             echo -e "iptables, including ruleset and crontab entries will be set up next.\
-# \n   Press a key...";read -n1 -r
+directoryforscripts="${directoryforscripts%%/}"
+        if ! [[ "${answer%f*}" == "$answer" ]];then
+            echo "firewalling"
+             echo -e "iptables, including ruleset and crontab entries will be set up next.\
+\n   Press a key...";read -n1 -r
 # The next section prints itself out to its shell script file
-#             install_buildiptablessh
-#             install_cronentries
-#             outemail_warnings
-#             echo -e "\nPress a key to acknowledge and continue, Ctrl-c to abort..."
-#             read -n1
-#             conf_postfix
-#:
-#        fi
-#        if ! [[ "${answer%r*}" == "$answer" ]];then
-#             echo -e "remote controlling"
-#             install_rc
-#             
-#        fi
-        if ! [[ "${answer%d*}" == "$answer" ]];then
+             install_buildiptablessh
+             install_cronentries
+             outemail_warnings
+             echo -e "\nPress a key to acknowledge and continue, Ctrl-c to abort..."
+             read -n1
+             conf_postfix
+        fi
+        if ! [[ "${answer%r*}" == "$answer" ]];then
+             echo -e "remote controlling"
+             install_rc
+             
+        fi
+        if ! [[ "${answer%d*}" == "$answer" ]] && ! [[ "$notdhcp" == "notdhcp" ]];then
              echo -e "dynamic IP change notify"
-#             install_rc
+             install_rc
              install_dynIPch
-
         fi
     fi
 done
