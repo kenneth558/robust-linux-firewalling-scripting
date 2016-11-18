@@ -1,0 +1,376 @@
+#!/bin/bash
+tmpfiles="/tmp"
+
+set_notinstalled_var () {
+# string not needed unless a proof is found that two or more packages in the same distro can make the more- and less-preferred somehow get mixed around: package name + binary name 
+# These are arrays! element[0] is the path-prefixed binary name - filled only after finding the more-preferred binary and from [1] after no more packages are left to install, [1] is the full path-prefixed less-preferred
+# binary name in cases where the less-preferred binary was found prior to finding the more-preferred binary name. 
+# every binary search looks for less-preferred name if more-preferred name not found.
+# more-preferred binary name[s, space-separated], [2] is the less-preferred binary name[s, space-separated], [3] 
+# if [[ -z "$inotifywaitpath" ]];then notinstalled+="$inotifywaitpath[]\n";fi
+[[ -z "$inotifywaitpath" ]] && notinstalled+="inotify-tools\n"
+[[ -z "$iptablespath" ]] && notinstalled+="iptables\n"
+[[ -z "$netfiltperspath" ]] && notinstalled+="netfilter-persistent\n"
+[[ -z "$stdbufpath" ]] && notinstalled+="coreutils\n"
+[[ -z "$mailpath" ]] && notinstalled+="mailutils\n"
+[[ -z "$crontabpath" ]] && notinstalled+="bcron\ncronie\n"
+[[ -z "$datepath" ]] && notinstalled+="coreutils\n"
+[[ -z "$bcpath" ]] && notinstalled+="bc\n"
+[[ -z "$atpath" ]] && notinstalled+="at\n"
+[[ -z "$nicepath" ]] && notinstalled+="coreutils\n"
+[[ -z "$adduserpath" ]] && notinstalled+="adduser\nuseradd\n"
+[[ -z "$sendmail_works" ]] && [[ -z $postmappath ]] && notinstalled+="postmap\npostfix\n"
+[[ -z "$sendmail_works" ]] && [[ -z $postfixpath ]] && notinstalled+="postmap\npostfix\n"
+[[ -z "$ipsetpath" ]] && notinstalled+="ipset\n"
+}
+
+set_can_install_vars_distro_package_pairs_and_binary_names () {
+# string not needed unless a proof is found that two or more packages in the same distro can make the more- and less-preferred somehow get mixed around: package name + binary name 
+# These are arrays! element[0] is the path-prefixed binary name - filled only after finding the more-preferred binary and from [1] after no more packages are left to install, [1] is the full path-prefixed less-preferred
+# binary name in cases where the less-preferred binary was found prior to finding the more-preferred binary name. 
+# every binary search looks for less-preferred name if more-preferred name not found.
+# more-preferred binary name[s, space-separated], [2] is the less-preferred binary name[s, space-separated], [3] 
+# Real Examples of distro_names;distro_versions=
+# CentOS Linux;7.2.1511
+# Fedora;24
+# Ubuntu;16.04
+# openSUSE;42.1
+# LinuxMint;18
+# debian;8.6
+# arch
+# linux-gnu (python didn't do its thing)
+
+# where distro name does not include the numeric level, but instead, [an appended two-letter suffix] that corresponds to a numeric range of that distro:
+# Ex.: debian-aa, where aa might correspond to leve
+
+# a version is 7.2.1511, the first version that conformed is 5.0.00001 and the last is the latest.  So sorting with -v will establish this version conforms to the range specified for the last revision....
+
+# Could make element 0 the acquired path, element 1 the more-preferred binary name[s] linked to package names linked to distro names HOW!?!?!, element 2 the less-preferred binary name[s] linked to distro names, element 3 the 
+# more-preferred package name, element 4 the less-preferred package name[s]
+# so element 1 refers indirectly to elements 2 and 3.  Where are the distro names stored statically, linked to more-?
+
+# What to do when path is found for less-preferred binary name in order to force continued searches for the more-preferred binary name?  Some flag needs be set in the var to indicate that condition:
+# make pathvar[1]="got a less-preferred binary name, but re-search after further package installs for one of the more-preferred binary names to get installed from another package" or null string
+# make pathvar[2]=space-separated-more-preferred-binary-names
+# make pathvar[3]=space-separated-less-preferred-binary-names
+# make pathvar[4]=space-separated-less-preferred-binary-names
+# make pathvar[developer_specified_package_name]=space-separated-less-preferred-binary-names
+#XXX make pathvar[distro-1]=package name where more-preferred binary is found in distro-1
+#XXX make pathvar[distro-2]=package name where more-preferred binary is found in distro-2 ...
+
+
+# Say multiple packages need loading - numbers 1 and 2 have to settle for their less-preferred binary names, but even though their packages have been satisfied, their more-preferred binary names will continue to be searched for with every
+# following package loaded just in case one of those later-installed packages installed the more-preferred binary for 1 and/or 2.
+
+
+inotifywaitpath[developer_specified_package_name]="inotify-tools"
+iptablespath[developer_specified_package_name]="iptables"
+ipsetpath[developer_specified_package_name]="ipset"
+netfiltperspath[developer_specified_package_name]="netfilter-persistent" # if error is encountered with either package, may need to purge ipmitool for this install, then maybe re-install that when this install done
+netfiltperspath[LinuxMint]="iptables-persistent" # if error is encountered with either package, may need to purge ipmitool for this install, then maybe re-install that when this install done
+stdbufpath[developer_specified_package_name]="coreutils"
+mailpath[developer_specified_package_name]="mailutils"
+mailpath["CentOS Linux"]="mailx"
+mailpath[Redhat]="mailx"
+mailpath[Fedora]="mailx"
+sendmail_works[Raspbian]="postmap\npostfix"
+sendmail_works[developer_specified_package_name]="postfix"
+crontabpath[developer_specified_package_name]="cronie"
+crontabpath[Raspbian]="bcron"
+datepath[developer_specified_package_name]="coreutils"
+bcpath[developer_specified_package_name]="bc"
+atpath[developer_specified_package_name]="at"
+nicepath[developer_specified_package_name]="coreutils"
+adduserpath[developer_specified_package_name]="adduser"
+adduserpath[arch]="shadow"
+}
+
+press_a_key () {
+printf "press $(! [[ -z "$1$2" ]] && printf "$1/$2" || printf "any key"), Ctrl-c aborts..."
+read -rsn 1;read -rst 0.001 -n4 discard
+[[ "$REPLY" == "$1" ]] && return 0 || return 1
+}
+#Example:
+#  distro_version  range is different for each distro, of course .... aa or whatever ???
+# greppath[LinuxMint]=
+
+
+
+
+
+
+
+
+
+
+whereispath="/usr/bin/whereis"
+binaryflag="-b"
+pythonpath="$($whereispath $binaryflag python)";pythonpath="${pythonpath#*:}";pythonpath="${pythonpath# }";pythonpath="${pythonpath%% *}"
+! [[ -x "$pythonpath" ]] && pythonpath="" # the python binary is not present
+pythondistrochkfile="$tmpfiles/distributionby.${0#*/}"
+pythonversionchkfile="$tmpfiles/distro_versionby.${0#*/}"
+rm -f "$pythondistrochkfile""err"
+eval "$pythonpath -c \"from platform import linux_distribution;print(linux_distribution()[0])\"" 2>"$pythondistrochkfile""err" > "$pythondistrochkfile"
+eval "$pythonpath -c \"from platform import linux_distribution;print(linux_distribution()[1])\"" 2>>"$pythondistrochkfile""err" > "$pythonversionchkfile"
+if [[ -s "$pythondistrochkfile""err" ]];then #so python 3 didn't work, try 2 next
+    rm -f "$pythondistrochkfile""err" 2 > /dev/null
+    eval "$pythonpath -c \"import platform;from platform import linux_distribution;print(platform.linux_distribution()[0])\" 2>\"$pythondistrochkfile""err\"" > "$pythondistrochkfile"
+    eval "$pythonpath -c \"import platform;from platform import linux_distribution;print(platform.linux_distribution()[1])\" 2>>\"$pythondistrochkfile""err\"" > "$pythonversionchkfile"
+fi
+if [[ -s "$pythondistrochkfile""err" ]];then
+    rm -f "$pythondistrochkfile""err" 2 > /dev/null
+    printf "Functionality to know correct packages to install may be limited due to inability to determine distribution type.  You might want to install python to correct this, but the point is mute if all packages needed are already installed or you are willing to install them manually.  ";press_a_key
+    echo $OSTYPE > "$pythondistrochkfile"
+fi
+distro="0"
+distro="$(cat "$pythondistrochkfile")"
+distro_version="0"
+distro_version="$(cat "$pythonversionchkfile")" # Nothing done with this, yet: don't need to be that sophisticated.  Just resort to manual install by announcement
+declare -A greppath
+greppath["$distro"]="Here, a third element"
+[[ -z "$greppath" ]] && echo "greppath is blank even though greppath["$distro"] = ${greppath["$distro"]}"
+# exit
+usrdir="";localdir="";sharedir="";bindir="";sbindir="";binaryflag="-b";dirsign="";counter=0
+D2b=({0..1}{0..1}{0..1}{0..1}{0..1}{0..1})
+until whereispath="$usrdir$localdir$sharedir$bindir$sbindir$dirsign""whereis";[[ ++counter -eq 64 ]] || [[ "$($whereispath $binaryflag whereis &> /dev/null;echo $?)" == "0" ]];do
+    ! [[ -z "$binaryflag" ]] && binaryflag="" && continue
+    binaryflag="-b"
+    dirsign="/"
+    usrdir="";localdir="";sharedir="";bindir="";sbindir=""
+    cntr="${D2b[counter]}"w
+done
+if [[ counter -eq 64 ]];then echo "Unable to locate executable files on your system";exit;fi
+whereispath="${whereispath#*:}";whereispath="${whereispath# }";whereispath="${whereispath%% *}"
+
+musthavepreinstalledpaths=( \
+greppath=\"$\("$whereispath $binaryflag grep"\)\"\;greppath=\"$\{greppath#*:\}\"\;greppath=\"$\{"greppath# "\}\"\;greppath=\"$\{"greppath%% *"\}\" \
+sedpath=\"$\("$whereispath $binaryflag sed"\)\"\;sedpath=\"$\{sedpath#*:\}\"\;sedpath=\"$\{"sedpath# "\}\"\;sedpath=\"$\{"sedpath%% *"\}\" \
+pspath=\"$\("$whereispath $binaryflag ps"\)\"\;pspath=\"$\{pspath#*:\}\"\;pspath=\"$\{"pspath# "\}\"\;pspath=\"$\{"pspath%% *"\}\" \
+ippath=\"$\("$whereispath $binaryflag ip"\)\"\;ippath=\"$\{ippath#*:\}\"\;ippath=\"$\{"ippath# "\}\"\;ippath=\"$\{"ippath%% *"\}\" \
+wcpath=\"$\("$whereispath $binaryflag wc"\)\"\;wcpath=\"$\{wcpath#*:\}\"\;wcpath=\"$\{"wcpath# "\}\"\;wcpath=\"$\{"wcpath%% *"\}\" \
+netfiltperspath=\"/usr/sbin/netfilter-persistent\" \
+scriptpath=\""/dir name with spaces/script"\" \
+scriptpath[1]=\""grep"\" \
+)
+
+allowmanualinstallnowpaths=( \
+ifconfigpath=\"$\("$whereispath $binaryflag ifconfig"\)\"\;ifconfigpath=\"$\{ifconfigpath#*:\}\"\;ifconfigpath=\"$\{"ifconfigpath# "\}\"\;ifconfigpath=\"$\{"ifconfigpath%% *"\}\" \
+getentpath=\"$\("$whereispath $binaryflag getent"\)\"\;getentpath=\"$\{getentpath#*:\}\"\;getentpath=\"$\{"getentpath# "\}\"\;getentpath=\"$\{"getentpath%% *"\}\" \
+xargspath=\"$\("$whereispath $binaryflag xargs"\)\"\;xargspath=\"$\{xargspath#*:\}\"\;xargspath=\"$\{"xargspath# "\}\"\;xargspath=\"$\{"xargspath%% *"\}\" \
+unamepath=\"$\("$whereispath $binaryflag uname"\)\"\;unamepath=\"$\{unamepath#*:\}\"\;unamepath=\"$\{"unamepath# "\}\"\;unamepath=\"$\{"unamepath%% *"\}\" \
+lsmodpath=\"$\("$whereispath $binaryflag lsmod"\)\"\;lsmodpath=\"$\{lsmodpath#*:\}\"\;lsmodpath=\"$\{"lsmodpath# "\}\"\;lsmodpath=\"$\{"lsmodpath%% *"\}\" \
+uniqpath=\"$\("$whereispath $binaryflag uniq"\)\"\;uniqpath=\"$\{uniqpath#*:\}\"\;uniqpath=\"$\{"uniqpath# "\}\"\;uniqpath=\"$\{"uniqpath%% *"\}\" \
+tailpath=\"$\("$whereispath $binaryflag tail"\)\"\;tailpath=\"$\{tailpath#*:\}\"\;tailpath=\"$\{"tailpath# "\}\"\;tailpath=\"$\{"tailpath%% *"\}\" \
+headpath=\"$\("$whereispath $binaryflag head"\)\"\;headpath=\"$\{headpath#*:\}\"\;headpath=\"$\{"headpath# "\}\"\;headpath=\"$\{"headpath%% *"\}\" \
+curlpath=\"$\("$whereispath $binaryflag curl"\)\"\;curlpath=\"$\{curlpath#*:\}\"\;curlpath=\"$\{"curlpath# "\}\"\;curlpath=\"$\{"curlpath%% *"\}\" \
+sortpath=\"$\("$whereispath $binaryflag sort"\)\"\;sortpath=\"$\{sortpath#*:\}\"\;sortpath=\"$\{"sortpath# "\}\"\;sortpath=\"$\{"sortpath%% *"\}\" \
+filepath=\"$\("$whereispath $binaryflag file"\)\"\;filepath=\"$\{filepath#*:\}\"\;filepath=\"$\{"filepath# "\}\"\;filepath=\"$\{"filepath%% *"\}\" \
+)
+
+markerandoptionalpreinstalledpaths=( \
+rhelchkconfigpath=\"$\("$whereispath $binaryflag chkconfig"\)\"\;rhelchkconfigpath=\"$\{rhelchkconfigpath#*:\}\"\;rhelchkconfigpath=\"$\{"rhelchkconfigpath# "\}\"\;rhelchkconfigpath=\"$\{"rhelchkconfigpath%% *"\}\" \
+journalctlpath=\"$\("$whereispath $binaryflag journalctl"\)\"\;journalctlpath=\"$\{journalctlpath#*:\}\"\;journalctlpath=\"$\{"journalctlpath# "\}\"\;journalctlpath=\"$\{"journalctlpath%% *"\}\" \
+resizepath=\"$\("$whereispath $binaryflag resize"\)\"\;resizepath=\"$\{resizepath#*:\}\"\;resizepath=\"$\{"resizepath# "\}\"\;resizepath=\"$\{"resizepath%% *"\}\" \
+pythonpath=\"$\("$whereispath $binaryflag python"\)\"\;pythonpath=\"$\{pythonpath#*:\}\"\;pythonpath=\"$\{"pythonpath# "\}\"\;pythonpath=\"$\{"pythonpath%% *"\}\" \
+)
+# <<"EOF"
+
+
+
+
+
+
+
+
+# The following fills the pathvars with preferred binary name if found
+# installbypackageinstallerpaths=( \
+#mail commands: mail and mailx are more-preferred, sendmail is less-preferred
+if [[ -z "$netfiltperspath" ]];then netfiltperspath=$($whereispath $binaryflag netfilter-persistent);netfiltperspath="${netfiltperspath#*:}";netfiltperspath="${netfiltperspath# }";netfiltperspath="${netfiltperspath%% *}";fi
+if [[ -z "$inotifywaitpath" ]];then inotifywaitpath=$($whereispath $binaryflag inotifywait);inotifywaitpath="${inotifywaitpath#*:}";inotifywaitpath="${inotifywaitpath# }";inotifywaitpath="${inotifywaitpath%% *}";fi
+if [[ -z "$postqueuepath" ]];then postqueuepath=$($whereispath $binaryflag postqueue);postqueuepath="${postqueuepath#*:}";postqueuepath="${postqueuepath# }";postqueuepath="${postqueuepath%% *}";fi
+if [[ -z "$iptablespath" ]];then iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath# }";iptablespath="${iptablespath%% *}";fi
+if [[ -z "$crontabpath" ]];then crontabpath=$($whereispath $binaryflag crontab);crontabpath="${crontabpath#*:}";crontabpath="${crontabpath# }";crontabpath="${crontabpath%% *}";fi
+if [[ -z "$timeoutpath" ]];then timeoutpath=$($whereispath $binaryflag timeout);timeoutpath="${timeoutpath#*:}";timeoutpath="${timeoutpath# }";timeoutpath="${timeoutpath%% *}";fi 
+if [[ -z "$adduserpath" ]];then adduserpath=$($whereispath $binaryflag adduser);adduserpath="${adduserpath#*:}";adduserpath="${adduserpath# }";adduserpath="${adduserpath%% *}";fi 
+if [[ -z "$postmappath" ]];then postmappath=$($whereispath $binaryflag postmap);postmappath="${postmappath#*:}";postmappath="${postmappath# }";postmappath="${postmappath%% *}";fi 
+if [[ -z "$postfixpath" ]];then postfixpath=$($whereispath $binaryflag postfix);postfixpath="${postfixpath#*:}";postfixpath="${postfixpath# }";postfixpath="${postfixpath%% *}";fi 
+if [[ -z "$visudopath" ]];then visudopath=$($whereispath $binaryflag visudo);visudopath="${visudopath#*:}";visudopath="${visudopath# }";visudopath="${visudopath%% *}";fi
+if [[ -z "$stdbufpath" ]];then stdbufpath=$($whereispath $binaryflag stdbuf);stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath# }";stdbufpath="${stdbufpath%% *}";fi
+if [[ -z "$ifdownpath" ]];then ifdownpath=$($whereispath $binaryflag ifdown);ifdownpath="${ifdownpath#*:}";ifdownpath="${ifdownpath# }";ifdownpath="${ifdownpath%% *}";fi
+if [[ -z "$ipsetpath" ]];then ipsetpath=$($whereispath $binaryflag ipset);ipsetpath="${ipsetpath#*:}";ipsetpath="${ipsetpath# }";ipsetpath="${ipsetpath%% *}";fi
+if [[ -z "$sleeppath" ]];then sleeppath=$($whereispath $binaryflag sleep);sleeppath="${sleeppath#*:}";sleeppath="${sleeppath# }";sleeppath="${sleeppath%% *}";fi 
+if [[ -z "$mailpath" ]];then mailpath=$($whereispath $binaryflag mail);mailpath="${mailpath#*:}";fi # looking for opportunity to up-step b/c mail is better than sendmail which doesn't accept -s arg
+if [[ -z "$mailpath" ]];then mailpath=" $($whereispath $binaryflag mailx)";mailpath="${mailpath#*:}";fi
+if [[ -z "$ifuppath" ]];then ifuppath=$($whereispath $binaryflag ifup);ifuppath="${ifuppath#*:}";ifuppath="${ifuppath# }";ifuppath="${ifuppath%% *}";fi
+if [[ -z "$datepath" ]];then datepath=$($whereispath $binaryflag date);datepath="${datepath#*:}";datepath="${datepath# }";datepath="${datepath%% *}";fi 
+if [[ -z "$bashpath" ]];then bashpath=$($whereispath $binaryflag bash);bashpath="${bashpath#*:}";bashpath="${bashpath# }";bashpath="${bashpath%% *}";fi 
+if [[ -z "$freepath" ]];then freepath=$($whereispath $binaryflag free);freepath="${freepath#*:}";freepath="${freepath# }";freepath="${freepath%% *}";fi 
+if [[ -z "$nicepath" ]];then nicepath=$($whereispath $binaryflag nice);nicepath="${nicepath#*:}";nicepath="${nicepath# }";nicepath="${nicepath%% *}";fi 
+if [[ -z "$bcpath" ]];then bcpath=$($whereispath $binaryflag bc);bcpath="${bcpath#*:}";bcpath="${bcpath# }";bcpath="${bcpath%% *}";fi
+if [[ -z "$wcpath" ]];then wcpath=$($whereispath $binaryflag wc);wcpath="${wcpath#*:}";wcpath="${wcpath# }";wcpath="${wcpath%% *}";fi 
+if [[ -z "$atpath" ]];then atpath=$($whereispath $binaryflag at);atpath="${atpath#*:}";atpath="${atpath# }";atpath="${atpath%% *}";! [[ "${atpath: -2:2}" == "at" ]] && atpath="";fi
+if [[ -z "$netfiltperspath" ]];then netfiltperspath=$($whereispath $binaryflag netfilter-persistent);netfiltperspath="${netfiltperspath#*:}";netfiltperspath="${netfiltperspath# }";netfiltperspath="${netfiltperspath%% *}";fi
+if [[ -z "$inotifywaitpath" ]];then inotifywaitpath=$($whereispath $binaryflag inotifywait);inotifywaitpath="${inotifywaitpath#*:}";inotifywaitpath="${inotifywaitpath# }";inotifywaitpath="${inotifywaitpath%% *}";fi
+if [[ -z "$postqueuepath" ]];then postqueuepath=$($whereispath $binaryflag postqueue);postqueuepath="${postqueuepath#*:}";postqueuepath="${postqueuepath# }";postqueuepath="${postqueuepath%% *}";fi
+if [[ -z "$iptablespath" ]];then iptablespath=$($whereispath $binaryflag iptables);iptablespath="${iptablespath#*:}";iptablespath="${iptablespath# }";iptablespath="${iptablespath%% *}";fi
+if [[ -z "$crontabpath" ]];then crontabpath=$($whereispath $binaryflag crontab);crontabpath="${crontabpath#*:}";crontabpath="${crontabpath# }";crontabpath="${crontabpath%% *}";fi
+if [[ -z "$timeoutpath" ]];then timeoutpath=$($whereispath $binaryflag timeout);timeoutpath="${timeoutpath#*:}";timeoutpath="${timeoutpath# }";timeoutpath="${timeoutpath%% *}";fi 
+if [[ -z "$adduserpath" ]];then adduserpath=$($whereispath $binaryflag adduser);adduserpath="${adduserpath#*:}";adduserpath="${adduserpath# }";adduserpath="${adduserpath%% *}";fi 
+if [[ -z "$postmappath" ]];then postmappath=$($whereispath $binaryflag postmap);postmappath="${postmappath#*:}";postmappath="${postmappath# }";postmappath="${postmappath%% *}";fi 
+if [[ -z "$postfixpath" ]];then postfixpath=$($whereispath $binaryflag postfix);postfixpath="${postfixpath#*:}";postfixpath="${postfixpath# }";postfixpath="${postfixpath%% *}";fi 
+if [[ -z "$visudopath" ]];then visudopath=$($whereispath $binaryflag visudo);visudopath="${visudopath#*:}";visudopath="${visudopath# }";visudopath="${visudopath%% *}";fi
+if [[ -z "$stdbufpath" ]];then stdbufpath=$($whereispath $binaryflag stdbuf);stdbufpath="${stdbufpath#*:}";stdbufpath="${stdbufpath# }";stdbufpath="${stdbufpath%% *}";fi
+if [[ -z "$ifdownpath" ]];then ifdownpath=$($whereispath $binaryflag ifdown);ifdownpath="${ifdownpath#*:}";ifdownpath="${ifdownpath# }";ifdownpath="${ifdownpath%% *}";fi
+if [[ -z "$ipsetpath" ]];then ipsetpath=$($whereispath $binaryflag ipset);ipsetpath="${ipsetpath#*:}";ipsetpath="${ipsetpath# }";ipsetpath="${ipsetpath%% *}";fi
+if [[ -z "$sleeppath" ]];then sleeppath=$($whereispath $binaryflag sleep);sleeppath="${sleeppath#*:}";sleeppath="${sleeppath# }";sleeppath="${sleeppath%% *}";fi 
+if [[ -z "$mailpath" ]] || [[ "$mailpath" =~ sendmail$ ]];then mailpath=$($whereispath $binaryflag mail);mailpath="${mailpath#*:}";fi # b/c mail is better than sendmail which doesn't accept -s arg
+if [[ -z "$mailpath" ]];then mailpath=" $($whereispath $binaryflag mailx)";mailpath="${mailpath#*:}";fi
+if [[ -z "$ifuppath" ]];then ifuppath=$($whereispath $binaryflag ifup);ifuppath="${ifuppath#*:}";ifuppath="${ifuppath# }";ifuppath="${ifuppath%% *}";fi
+if [[ -z "$datepath" ]];then datepath=$($whereispath $binaryflag date);datepath="${datepath#*:}";datepath="${datepath# }";datepath="${datepath%% *}";fi 
+if [[ -z "$bashpath" ]];then bashpath=$($whereispath $binaryflag bash);bashpath="${bashpath#*:}";bashpath="${bashpath# }";bashpath="${bashpath%% *}";fi 
+if [[ -z "$freepath" ]];then freepath=$($whereispath $binaryflag free);freepath="${freepath#*:}";freepath="${freepath# }";freepath="${freepath%% *}";fi 
+if [[ -z "$nicepath" ]];then nicepath=$($whereispath $binaryflag nice);nicepath="${nicepath#*:}";nicepath="${nicepath# }";nicepath="${nicepath%% *}";fi 
+if [[ -z "$bcpath" ]];then bcpath=$($whereispath $binaryflag bc);bcpath="${bcpath#*:}";bcpath="${bcpath# }";bcpath="${bcpath%% *}";fi
+if [[ -z "$wcpath" ]];then wcpath=$($whereispath $binaryflag wc);wcpath="${wcpath#*:}";wcpath="${wcpath# }";wcpath="${wcpath%% *}";fi 
+if [[ -z "$atpath" ]];then atpath=$($whereispath $binaryflag at);atpath="${atpath#*:}";atpath="${atpath# }";atpath="${atpath%% *}";! [[ "${atpath: -2:2}" == "at" ]] && atpath="";fi
+# )
+
+<<"EOF"
+
+mailpath=$(whereis -b wail sail mail mailx sail);mailpath="$(printf "$mailpath"|while read line;line="${line#*:}";do if [[ ${#line} -gt 1 ]];then printf "$line\n";break;fi;done)";mailpath="${mailpath# }";mailpath="${mailpath%% *}";printf "mailpath=>$mailpath<\n"
+
+
+
+;journalctlpath=\"${journalctlpath#*:}\";journalctlpath=\"${journalctlpath# }\";journalctlpath=\"${journalctlpath%% *}\"
+
+"resizepath=\"$($whereispath $binaryflag resize)\";resizepath=\"${resizepath#*:}\";resizepath=\"${resizepath# }\";resizepath=\"${resizepath%% *}\"" \
+"pspath=\"$($whereispath $binaryflag ps)\";pspath=\"${pspath#*:}\";pspath=\"${pspath# }\";pspath=\"${pspath%% *}\"" \
+"greppath=\"$($whereispath $binaryflag grep)\";greppath=\"${greppath#*:}\";greppath=\"${greppath# }\";greppath=\"${greppath%% *}\"" \
+"ippath=\"$($whereispath $binaryflag ip)\";ippath=\"${ippath#*:}\";ippath=\"${ippath# }\";ippath=\"${ippath%% *}\"" \
+"wcpath=\"$($whereispath $binaryflag wc)\";wcpath=\"${wcpath#*:}\";wcpath=\"${wcpath# }\";wcpath=\"${wcpath%% *}\"" \
+"sedpath=\"$($whereispath $binaryflag sed)\";sedpath=\"${sedpath#*:}\";sedpath=\"${sedpath# }\";sedpath=\"${sedpath%% *}\"" \
+"rhelchkconfigpath=\"$($whereispath $binaryflag chkconfig)\";rhelchkconfigpath=\"${rhelchkconfigpath#*:}\";rhelchkconfigpath=\"${rhelchkconfigpath# }\";rhelchkconfigpath=\"${rhelchkconfigpath%% *}\"" \
+"netfiltperspath=\"/usr/sbin/netfilter-persistent\"" \
+"sudopath=\"/usr/bin/sudo\"" \
+"awkpath=\"/usr/bin/awk\"" \
+"tailpath=\"/usr/bin/tail\"" \
+"mailpath=\"/usr/bin/mail\"" \
+"wcpath=\"/usr/bin/wc\"" \
+"greppath=\"/bin/grep\"" \
+"sedpath=\"/bin/sed\"" \
+"crontabpath=\"/usr/bin/crontab\"" \
+"iptablespath=\"/sbin/iptables\"" \
+"ipsetpath=\"/sbin/ipset\"" \
+"scriptpath=\"/dir name with spaces/script\"" \
+\
+\
+\
+)
+# echo "Looking for $1"
+#<<EOF
+EOF
+echo "Array size: ${#musthavepreinstalledpaths[*]}"
+echo
+
+echo "Number of items in original array: ${#musthavepreinstalledpaths[*]}"
+for ix in ${!musthavepreinstalledpaths[*]}
+do
+#    printf "   %s\n" "${musthavepreinstalledpaths[$ix]}"
+#    eval "${musthavepreinstalledpaths[$ix]}"
+:
+done
+echo
+arr=("${musthavepreinstalledpaths[@]}")
+echo "After @ quoted expansion: ${#arr[*]}"
+for ix in ${!arr[*]}
+do
+#    printf "   %s\n" "${arr[$ix]}"
+    eval "${arr[$ix]}"
+:
+done
+printf "\njournalctlpath=$journalctlpath\n"
+printf "resizepath=$resizepath\n"
+printf "pspath=$pspath\n"
+printf "greppath=$greppath\n"
+printf "ippath=$ippath\n"
+printf "wcpath=$wcpath\n"
+printf "sedpath=$sedpath\n"
+printf "rhelchkconfigpath=$rhelchkconfigpath\n"
+printf "greppath[1]=${greppath[1]}\n"
+<<"EOF"
+printf "$sudopath\n"
+printf "$awkpath\n"
+printf "$tailpath\n"
+printf "$mailpath\n"
+printf "$wcpath\n"
+printf "$greppath\n"
+printf "$sedpath\n"
+printf "$crontabpath\n"
+printf "$iptablespath\n"
+printf "$ipsetpath\n"
+EOF
+printf "$netfiltperspath\n"
+printf "$scriptpath\n"
+
+"$scriptpath"
+# echo "Array items:"
+# for item in ${paths[*]}
+# do
+#     printf "   %s\n" "$item"
+# done
+
+# echo "Array indexes:"
+# for index in ${!paths[*]}
+# do
+#     printf "   %d\n" $index
+# done
+
+# arr=(${paths[*]})
+# echo "After unquoted expansion: ${#arr[*]}"
+# for ix in ${!arr[*]}
+# do
+#     printf "   %s\n" "${arr[$ix]}"
+# done
+# echo
+
+# arr=("${paths[*]}")
+# echo "After * quoted expansion: ${#arr[*]}"
+# for ix in ${!arr[*]}
+# do
+#     printf "   %s\n" "${arr[$ix]}"
+# done
+# echo
+echo "Array items and indexes:"
+for index in ${!musthavepreinstalledpaths[*]}
+do
+#        printf "\nindex=$index\n"
+#    printf "Loop index=$index, "
+#    if [[ $index == "0" ]] || [[ $((index)) -gt 0 ]];then
+#        printf "%4d: %s\n" $index "${musthavepreinstalledpaths[$index]}"
+#    else
+#        printf "$index ${musthavepreinstalledpaths[$index]}"
+#    fi
+    printf "${musthavepreinstalledpaths[$index]}\n"
+#    eval "${musthavepreinstalledpaths[$index]}" # ; printf ${musthavepreinstalledpaths[$index]}"
+done
+counter=""
+echo
+echo "greppath array items and indexes:"
+for index in ${!greppath[*]}
+do
+#        printf "\nindex=$index\n"
+#    printf "Loop index=$index, "
+#    if [[ $index == "0" ]] || [[ $((index)) -gt 0 ]];then
+#        printf "%4d: %s\n" $index "${greppath[$index]}"
+#    else
+#        printf "$index ${greppath[$index]}"
+#    fi
+    printf " $index: ${greppath[$index]}\n"
+#    eval "${greppath[$index]}" # ; printf ${greppath[$index]}"
+done
+echo
+printf -- "greppath[2]=${greppath[2]}"
+"${greppath[2]}"
+"$greppath"
+"${greppath[1]}"
+exit
