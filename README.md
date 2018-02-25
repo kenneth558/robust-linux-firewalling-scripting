@@ -1,3 +1,4 @@
+                   (I abandoned this project upon realizing just how disparately divergent the Linux universe is)
 Linux iptables plus scripting firewall  "NOT COMPATIBLE WITH BSD NOR MAC SYSTEMS"
 
 BULLET-PROOF YOUR “OWNER-ACCESS-ONLY” LINUX SERVER FROM HACKERS WITH IPTABLES AND ROBUST SHELL SCRIPTING.
